@@ -1,0 +1,736 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>iOS的多线程原理、分类与应用 - Alvin Zhu</title>
+	<meta name="author" content="Alvin Zhu">
+
+	
+	<meta name="description" content="iOS的多线程原理、分类与应用 今天查资料才发现，iOS中的线程使用不是无限制的，官方文档给出的资料显示iOS下的主线程堆栈大小是1M，第二个线程开始都是512KB，并且该值不能通过编译器开关或线程API函数来更改。另外只有主线程有直接修改UI的能力。 &hellip;">
+	<meta name="keywords" content="iOS,多线程,原理,GCD">
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Alvin Zhu" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://gbammc.github.io/blog/2013/10/06/iosde-duo-xian-cheng-fen-lei-yu-ying-yong/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,400,700' rel='stylesheet' type='text/css'>
+	
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">	
+	<script src="/javascripts/md5.js"></script>
+	<script type="text/javascript">
+		document.write("<img src='http://www.gravatar.com/avatar/" + MD5("gbammc@gmail.com") + "?s=160' alt='Profile Picture' style='width: 160px;' />");
+	</script>
+</div>
+<h1><a href="/">Alvin Zhu</a></h1>
+<p class="subtitle">"人类渺小，<br>但不代表我要永世困于壁内。"</p>
+<nav id="main-nav"><ul class="main">
+	<li><a href="/">首页</a></li>
+	<li><a href="/blog/archives">全部文章</a></li>
+	<li><a href="/blog/categories">分类列表</a></li>
+	<li><a href="/about">关于我</a></li>
+	<li><a href="/friends">友情链接</a></li>
+	<li><a href="https://itunes.apple.com/cn/app/id574437211">ifanr - 爱范儿客户端</a></li>
+	<li><a href="https://itunes.apple.com/cn/app/id611036705">数读 - 用数字读懂世界</a></li>
+	<li><a href="http://www.scau123.com/hnb/">iSCAU - 华农学子必备</a></li>
+</ul></nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+		<a class="weibo" href="http://www.weibo.com/blackteafeng" title="Weibo">Weibo</a>
+		
+		
+		
+		<a class="google" href="https://plus.google.com/101572322776670119375" rel="author" title="Google+">Google+</a>
+		
+		
+		<a class="twitter" href="http://twitter.com/alvin_zhu" title="Twitter">Twitter</a>
+		
+		
+		<a class="github" href="https://github.com/gbammc" title="GitHub">GitHub</a>
+		
+		
+		
+		
+		
+		
+		
+		<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			
+				
+			
+			<div class="mid-col-container">
+				<div id="content" class="inner"><article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<h1 class="title" itemprop="name">iOS的多线程原理、分类与应用</h1>
+	<div class="entry-content" itemprop="articleBody"><p>今天查资料才发现，iOS中的线程使用不是无限制的，官方文档给出的<a href="https://developer.apple.com/library/mac/documentation/cocoa/conceptual/Multithreading/CreatingThreads/CreatingThreads.html">资料</a>显示iOS下的主线程堆栈大小是1M，第二个线程开始都是512KB，并且该值不能通过编译器开关或线程API函数来更改。另外只有主线程有直接修改UI的能力。所以也学习并总结下iOS的多线程编程来加深下吧。</p>
+
+<!-- more -->
+
+
+<ul>
+<li><a href="#runloop">关于RunLoopg</a></li>
+<li><a href="#nsthread">NSThread</a></li>
+<li><a href="#nsoperation">NSOperationQueue和NSOperation</a></li>
+<li><a href="#gcd">GCD</a></li>
+<li><a href="#compare">NSOperationQueue与GCD的对比</a></li>
+</ul>
+
+
+<hr />
+
+<h2><span id="runloop">关于RunLoop</span></h2>
+
+<p>首先关于RunLoop，iOS中的RunLoop准确的说是线程中的循环。首先循环体的开始需要检测是否有需要处理的事件，如果有则去处理，如果没有则进入睡眠以节省CPU时间。 所以重点便是这个需要处理的事件，在RunLoop中，需要处理的事件分两类，一种是输入源，一种是定时器。定时器好理解，就是那些需要定时执行的操作;输入源分三类：performSelector源，基于端口（Mach port）的源，以及自定义的源。而RunLoop在每一次循环的开始便去检查这些事件源是否有需要处理的数据，有的话则去处理。</p>
+
+<p>系统会自动为应用程序的主线程生成一个与之对应的 run loop 来处理其消息循环。在触摸 UIView 时之所以能够激发 touchesBegan/touchesMoved 等等函数被调用，就是因为应用程序的主线程在 UIApplicationMain 里面有这样一个 run loop 在分发 input 或 timer 事件。</p>
+
+<p>而每一个线程都有其对应的RunLoop，但是默认非主线程的RunLoop是没有运行的，需要为RunLoop添加至少一个事件源，然后去run它。一般情况下我们是没有必要去启用线程的RunLoop的，除非你在一个单独的线程中需要长久的检测某个事件。</p>
+
+<hr />
+
+<h2><span id="multi-thread">多线程编程</span></h2>
+
+<p>iOS中的多线程编程主要分以下三类：1.NSThread;2.NSOperation/NSOperationQueue;3.GCD。后两者其实都是对NSThreads的调用再进行一次封装，以便开发人员更容易使用iOS中的多线程编程。而对于NSOperation/NSOperationQueue和GCD的比较，支持者们意见不太统一，应该适时选择合适的。这里也附上StackOverflow上的<a href="http://stackoverflow.com/questions/10373331/nsoperation-vs-grand-central-dispatch">讨论</a>(本文后面也有列出大概原因)情况。</p>
+
+<h3><span id="nsthread">NSThread</span></h3>
+
+<ul>
+<li>优点：NSThread比其他两个轻量级</li>
+<li>缺点：需要自己管理线程的生命周期，线程同步。线程同步对数据的加锁会有一定的系统开销</li>
+</ul>
+
+
+<p><strong>NSThread的使用</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nf">initWithTarget:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">target</span> <span class="nf">selector:</span><span class="p">(</span><span class="kt">SEL</span><span class="p">)</span><span class="nv">selector</span> <span class="nf">object:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">argument</span>
+</span><span class='line'><span class="k">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">detachNewThreadSelector:</span><span class="p">(</span><span class="kt">SEL</span><span class="p">)</span><span class="nv">aSelector</span> <span class="nf">toTarget:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">aTarget</span> <span class="nf">withObject:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">anArgument</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>第一个是实例方法，第二个是类方法</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 类方法</span>
+</span><span class='line'><span class="p">[</span><span class="n">NSThread</span> <span class="nl">detachNewThreadSelector:</span><span class="k">@selector</span><span class="p">(</span><span class="nl">doSomething:</span><span class="p">)</span> <span class="nl">toTarget:</span><span class="n">self</span> <span class="nl">withObject:</span><span class="nb">nil</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 实例方法的声明</span>
+</span><span class='line'><span class="n">NSThread</span><span class="o">*</span> <span class="n">myThread</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSThread</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithTarget:</span><span class="n">self</span>
+</span><span class='line'>                                        <span class="nl">selector:</span><span class="k">@selector</span><span class="p">(</span><span class="nl">doSomething:</span><span class="p">)</span>
+</span><span class='line'>                                        <span class="nl">object:</span><span class="nb">nil</span><span class="p">];</span>
+</span><span class='line'><span class="c1">// 实例方法的调用</span>
+</span><span class='line'><span class="p">[</span><span class="n">myThread</span> <span class="n">start</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这两种方式的区别是：前一种一调用就会立即创建一个线程来做事情;而后一种虽然你alloc了也init了，但是要直到我们手动调用 <code>start</code> 启动线程时才会真正去创建线程。这种延迟实现思想在很多跟资源相关的地方都有用到。后一种方式我们还可以在启动线程之前，对线程进行配置，比如设置stack大小，线程优先级。</p>
+
+<p>还有一种间接的方式，更加方便，我们甚至不需要显式编写NSThread相关代码。那就是利用NSObject的类方法 <code>performSelectorInBackground:withObject:</code> 来创建一个线程：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">[</span><span class="n">myObj</span> <span class="nl">performSelectorInBackground:</span><span class="k">@selector</span><span class="p">(</span><span class="n">myThreadMainMethod</span><span class="p">)</span> <span class="nl">withObject:</span><span class="nb">nil</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其效果与NSThread的 <code>detachNewThreadSelector:toTarget:withObject:</code> 是一样的</p>
+
+<p><strong>线程同步</strong></p>
+
+<p>线程的同步方法跟其他系统下类似，我们可以用原子操作，可以用mutex，lock等。</p>
+
+<p>iOS的原子操作函数是以OSAtomic开头的，比如：OSAtomicAdd32, OSAtomicOr32等等。这些函数可以直接使用，因为它们是原子操作。</p>
+
+<p>iOS中的mutex对应的是NSLock，它遵循 NSLooking协议，我们可以使用lock, tryLock, lockBeforeData:来加锁，用unLock来解锁。使用示例：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">BOOL</span> <span class="n">moreToDo</span> <span class="o">=</span> <span class="n">YES</span><span class="p">;</span>
+</span><span class='line'><span class="n">NSLock</span> <span class="o">*</span><span class="n">theLock</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSLock</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'><span class="p">...</span>
+</span><span class='line'><span class="k">while</span> <span class="p">(</span><span class="n">moreToDo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="cm">/* Do another increment of calculation */</span>
+</span><span class='line'>    <span class="cm">/* until there’s no more to do. */</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">([</span><span class="n">theLock</span> <span class="n">tryLock</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="cm">/* Update display used by all threads. */</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">theLock</span> <span class="n">unlock</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>我们可以使用指令 @synchronized 来简化 NSLock的使用，这样我们就不必显示编写创建NSLock,加锁并解锁相关代码。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">myMethod:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">anObj</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">@synchronized</span><span class="p">(</span><span class="n">anObj</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="c1">// Everything between the braces is protected by the @synchronized directive.</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>还有其他的一些锁对象，比如：循环锁NSRecursiveLock，条件锁NSConditionLock，分布式锁NSDistributedLock等等，在这里就不一一介绍了。</p>
+
+<p><strong>用NSCodition同步执行的顺序</strong></p>
+
+<p>NSCodition是一种特殊类型的锁，我们可以用它来同步操作执行的顺序。它与mutex的区别在于更加精准，等待某个NSCondtion的线程一直被lock，直到其他线程给那个condition发送了信号。下面我们来看使用示例：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 某个线程等待着事情去做，而有没有事情做是由其他线程通知它的</span>
+</span><span class='line'><span class="p">[</span><span class="n">cocoaCondition</span> <span class="n">lock</span><span class="p">];</span>
+</span><span class='line'><span class="k">while</span> <span class="p">(</span><span class="n">timeToDoWork</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">[</span><span class="n">cocoaCondition</span> <span class="n">wait</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">timeToDoWork</span><span class="o">--</span><span class="p">;</span>
+</span><span class='line'><span class="c1">// Do real work here.</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">[</span><span class="n">cocoaCondition</span> <span class="n">unlock</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//其他线程发送信号通知上面的线程可以做事情了：</span>
+</span><span class='line'><span class="p">[</span><span class="n">cocoaCondition</span> <span class="n">lock</span><span class="p">];</span>
+</span><span class='line'><span class="n">timeToDoWork</span><span class="o">++</span><span class="p">;</span>
+</span><span class='line'><span class="p">[</span><span class="n">cocoaCondition</span> <span class="n">signal</span><span class="p">];</span>
+</span><span class='line'><span class="p">[</span><span class="n">cocoaCondition</span> <span class="n">unlock</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>线程间通信</strong></p>
+
+<p>线程在运行过程中，可能需要与其它线程进行通信。我们可以使用 NSObject 中的一些方法：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 在应用程序主线程中做事情：</span>
+</span><span class='line'><span class="nl">performSelectorOnMainThread:withObject:waitUntilDone:</span>
+</span><span class='line'><span class="nl">performSelectorOnMainThread:withObject:waitUntilDone:modes:</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 在指定线程中做事情：</span>
+</span><span class='line'><span class="nl">performSelector:onThread:withObject:waitUntilDone:</span>
+</span><span class='line'><span class="nl">performSelector:onThread:withObject:waitUntilDone:modes:</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 在当前线程中做事情：</span>
+</span><span class='line'><span class="nl">performSelector:withObject:afterDelay:</span>
+</span><span class='line'><span class="nl">performSelector:withObject:afterDelay:inModes:</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 取消发送给当前线程的某个消息</span>
+</span><span class='line'><span class="nl">cancelPreviousPerformRequestsWithTarget:</span>
+</span><span class='line'><span class="nl">cancelPreviousPerformRequestsWithTarget:selector:object:</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如在我们在某个线程中下载数据，下载完成之后要通知主线程中更新界面等等，可以使用如下接口：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">callMainThreadMethod</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">NSAutoreleasePool</span> <span class="o">*</span><span class="n">pool</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSAutoreleasePool</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>    <span class="c1">// to do something in your thread job</span>
+</span><span class='line'>    <span class="p">...</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">self</span> <span class="nl">performSelectorOnMainThread:</span><span class="k">@selector</span><span class="p">(</span><span class="n">updateUI</span><span class="p">)</span> <span class="nl">withObject:</span><span class="nb">nil</span> <span class="nl">waitUntilDone:</span><span class="n">NO</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">pool</span> <span class="n">release</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>隐式调用</strong></p>
+
+<p>用NSObject的类方法<code>performSelectorInBackground:withObject:</code>创建一个线程：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">[</span><span class="n">myObj</span> <span class="nl">performSelectorInBackground:</span><span class="k">@selector</span><span class="p">(</span><span class="n">doSomething</span><span class="p">)</span> <span class="nl">withObject:</span><span class="nb">nil</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<hr />
+
+<h3><span id="nsoperation">NSOperationQueue和NSOperation</span></h3>
+
+<p>多线程编程是防止主线程堵塞，增加运行效率等等的最佳方法。而原始的多线程方法存在很多的毛病，包括线程锁死等。在Cocoa中，Apple提供了NSOperation这个类，提供了一个优秀的多线程编程方法。</p>
+
+<p>NSOperationQueue会建立一个线程管理器，每个加入到线程operation会有序的执行。</p>
+
+<p>用NSOperationQueue的过程：</p>
+
+<ol>
+<li>建立一个NSOperationQueue的对象</li>
+<li>建立一个NSOperation的对象</li>
+<li>将operation加入到NSOperationQueue中</li>
+<li>release掉operation</li>
+</ol>
+
+
+<p>本次介绍NSOperation的子集，简易方法的NSInvocationOperation：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@implementation</span> <span class="nc">MyCustomClass</span>
+</span><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">launchTaskWithData:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">data</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="c1">//创建一个NSInvocationOperation对象，并初始化到方法</span>
+</span><span class='line'>    <span class="c1">//在这里，selector参数后的值是你想在另外一个线程中运行的方法（函数，Method）</span>
+</span><span class='line'>    <span class="c1">//在这里，object后的值是想传递给前面方法的数据</span>
+</span><span class='line'>    <span class="n">NSInvocationOperation</span><span class="o">*</span> <span class="n">theOp</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSInvocationOperation</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithTarget:</span><span class="n">self</span>
+</span><span class='line'>                    <span class="nl">selector:</span><span class="k">@selector</span><span class="p">(</span><span class="nl">myTaskMethod:</span><span class="p">)</span> <span class="nl">object:</span><span class="n">data</span><span class="p">];</span>
+</span><span class='line'>    <span class="c1">// 下面将我们建立的操作“Operation”加入到本地程序的共享队列中（加入后方法就会立刻被执行）</span>
+</span><span class='line'>    <span class="c1">// 更多的时候是由我们自己建立“操作”队列</span>
+</span><span class='line'>    <span class="p">[[</span><span class="n">MyAppDelegate</span> <span class="n">sharedOperationQueue</span><span class="p">]</span> <span class="nl">addOperation:</span><span class="n">theOp</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="c1">// 这个是真正运行在另外一个线程的“方法”</span>
+</span><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">myTaskMethod:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">data</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="c1">// Perform the task.</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>一个NSOperationQueue操作队列，就相当于一个线程管理器，而非一个线程。因为你可以设置这个线程管理器内可以并行运行的的线程数量等等。下面是建立并初始化一个操作队列：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">MyViewController</span> : <span class="nc">UIViewController</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">NSOperationQueue</span> <span class="o">*</span><span class="n">operationQueue</span><span class="p">;</span>
+</span><span class='line'>    <span class="c1">//在头文件中声明该队列</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'><span class="k">@implementation</span> <span class="nc">MyViewController</span>
+</span><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nf">init</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">self</span> <span class="o">=</span> <span class="p">[</span><span class="n">super</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">self</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">operationQueue</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSOperationQueue</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span> <span class="c1">//初始化操作队列</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">operationQueue</span> <span class="nl">setMaxConcurrentOperationCount:</span><span class="mi">1</span><span class="p">];</span>
+</span><span class='line'>        <span class="c1">//在这里限定了该队列只同时运行一个线程</span>
+</span><span class='line'>        <span class="c1">//这个队列已经可以使用了</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">self</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">dealloc</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">operationQueue</span> <span class="n">release</span><span class="p">];</span>
+</span><span class='line'>    <span class="c1">//正如Alan经常说的，我们是程序的好公民，需要释放内存！</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">super</span> <span class="n">dealloc</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<hr />
+
+<h3><span id="gcd">GCD</span></h3>
+
+<p>GCD是一个替代诸如NSThread, NSOperationQueue, NSInvocationOperation等技术的很高效和强大的技术，它看起来象就其它语言的闭包(Closure)一样，但苹果把它叫做blocks。</p>
+
+<h4>GCD的定义</h4>
+
+<p>简单GCD的定义有点象函数指针，差别是用 ^ 替代了函数指针的 * 号，如下所示：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 申明变量 </span>
+</span><span class='line'> <span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="p">(</span><span class="o">^</span><span class="n">loggerBlock</span><span class="p">)(</span><span class="kt">void</span><span class="p">);</span>
+</span><span class='line'> <span class="c1">// 定义 </span>
+</span><span class='line'> <span class="n">loggerBlock</span> <span class="o">=</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>      <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;Hello world&quot;</span><span class="p">);</span>
+</span><span class='line'> <span class="p">};</span>
+</span><span class='line'> <span class="c1">// 调用 </span>
+</span><span class='line'> <span class="n">loggerBlock</span><span class="p">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>但是大多数时候，我们通常使用内联的方式来定义它，即将它的程序块写在调用的函数里面，例如这样：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">dispatch_async</span><span class="p">(</span><span class="n">dispatch_get_global_queue</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>     <span class="c1">// something </span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>从上面大家可以看出，block有如下特点：</p>
+
+<p>程序块可以在代码中以内联的方式来定义。
+程序块可以访问在创建它的范围内的可用的变量。</p>
+
+<p>系统提供的dispatch方法</p>
+
+<p>为了方便地使用GCD，苹果提供了一些方法方便我们将block放在主线程 或 后台线程执行，或者延后执行。使用的例子如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">//  后台执行： </span>
+</span><span class='line'> <span class="n">dispatch_async</span><span class="p">(</span><span class="n">dispatch_get_global_queue</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>      <span class="c1">// something </span>
+</span><span class='line'> <span class="p">});</span>
+</span><span class='line'> <span class="c1">// 主线程执行： </span>
+</span><span class='line'> <span class="n">dispatch_async</span><span class="p">(</span><span class="n">dispatch_get_main_queue</span><span class="p">(),</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>      <span class="c1">// something </span>
+</span><span class='line'> <span class="p">});</span>
+</span><span class='line'> <span class="c1">// 一次性执行： </span>
+</span><span class='line'> <span class="k">static</span> <span class="n">dispatch_once_t</span> <span class="n">onceToken</span><span class="p">;</span>
+</span><span class='line'> <span class="n">dispatch_once</span><span class="p">(</span><span class="o">&amp;</span><span class="n">onceToken</span><span class="p">,</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>     <span class="c1">// code to be executed once </span>
+</span><span class='line'> <span class="p">});</span>
+</span><span class='line'> <span class="c1">// 延迟2秒执行： </span>
+</span><span class='line'> <span class="kt">double</span> <span class="n">delayInSeconds</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">;</span>
+</span><span class='line'> <span class="n">dispatch_time_t</span> <span class="n">popTime</span> <span class="o">=</span> <span class="n">dispatch_time</span><span class="p">(</span><span class="n">DISPATCH_TIME_NOW</span><span class="p">,</span> <span class="n">delayInSeconds</span> <span class="o">*</span> <span class="n">NSEC_PER_SEC</span><span class="p">);</span>
+</span><span class='line'> <span class="n">dispatch_after</span><span class="p">(</span><span class="n">popTime</span><span class="p">,</span> <span class="n">dispatch_get_main_queue</span><span class="p">(),</span> <span class="o">^</span><span class="p">(</span><span class="kt">void</span><span class="p">){</span>
+</span><span class='line'>     <span class="c1">// code to be executed on the main queue after delay </span>
+</span><span class='line'> <span class="p">});</span>
+</span><span class='line'><span class="c1">// dispatch_queue_t 也可以自己定义，如要要自定义queue，可以用dispatch_queue_create方法，示例如下：</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">dispatch_queue_t</span> <span class="n">urls_queue</span> <span class="o">=</span> <span class="n">dispatch_queue_create</span><span class="p">(</span><span class="s">&quot;blog.devtang.com&quot;</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+</span><span class='line'><span class="n">dispatch_async</span><span class="p">(</span><span class="n">urls_queue</span><span class="p">,</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>     <span class="c1">// your code </span>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'><span class="n">dispatch_release</span><span class="p">(</span><span class="n">urls_queue</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>后台运行</strong></p>
+
+<p>GCD的另一个用处是可以让程序在后台较长久的运行。在没有使用GCD时，当app被按home键退出后，app仅有最多5秒钟的时候做一些保存或清理资源的工作。但是在使用GCD后，app最多有10分钟的时间在后台长久运行。这个时间可以用来做清理本地缓存，发送统计数据等工作。</p>
+
+<p>另外，GCD还有一些高级用法，例如让后台2个线程并行执行，然后等2个线程都结束后，再汇总执行结果。这个可以用dispatch_group, dispatch_group_async 和 dispatch_group_notify来实现，示例如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">dispatch_group_t</span> <span class="n">group</span> <span class="o">=</span> <span class="n">dispatch_group_create</span><span class="p">();</span>
+</span><span class='line'><span class="n">dispatch_group_async</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">dispatch_get_global_queue</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>      <span class="c1">// 并行执行的线程一 </span>
+</span><span class='line'> <span class="p">});</span>
+</span><span class='line'> <span class="n">dispatch_group_async</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">dispatch_get_global_queue</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>      <span class="c1">// 并行执行的线程二 </span>
+</span><span class='line'> <span class="p">});</span>
+</span><span class='line'> <span class="n">dispatch_group_notify</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">dispatch_get_global_queue</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>      <span class="c1">// 汇总结果 </span>
+</span><span class='line'> <span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>让程序在后台长久运行的示例代码如下:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// AppDelegate.h文件 </span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="n">assign</span><span class="p">,</span> <span class="n">nonatomic</span><span class="p">)</span> <span class="n">UIBackgroundTaskIdentifier</span> <span class="n">backgroundUpdateTask</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// AppDelegate.m文件 </span>
+</span><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">applicationDidEnterBackground:</span><span class="p">(</span><span class="n">UIApplication</span> <span class="o">*</span><span class="p">)</span><span class="nv">application</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">self</span> <span class="n">beingBackgroundUpdateTask</span><span class="p">];</span>
+</span><span class='line'>    <span class="c1">// 在这里加上你需要长久运行的代码 </span>
+</span><span class='line'>    <span class="p">[</span><span class="n">self</span> <span class="n">endBackgroundUpdateTask</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">beingBackgroundUpdateTask</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">self</span><span class="p">.</span><span class="n">backgroundUpdateTask</span> <span class="o">=</span> <span class="p">[[</span><span class="n">UIApplication</span> <span class="n">sharedApplication</span><span class="p">]</span> <span class="nl">beginBackgroundTaskWithExpirationHandler:</span><span class="o">^</span><span class="p">{</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">self</span> <span class="n">endBackgroundUpdateTask</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">endBackgroundUpdateTask</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="p">[[</span><span class="n">UIApplication</span> <span class="n">sharedApplication</span><span class="p">]</span> <span class="nl">endBackgroundTask:</span> <span class="n">self</span><span class="p">.</span><span class="n">backgroundUpdateTask</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">self</span><span class="p">.</span><span class="n">backgroundUpdateTask</span> <span class="o">=</span> <span class="n">UIBackgroundTaskInvalid</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2><span id="compare">NSOperationQueue与GCD的对比</span></h2>
+
+<p>对于NSOperationQueue和GCD应该用哪个，一般来说可以用编程界比较通用的原则来决定：</p>
+
+<pre><code>Always use the highest-level abstraction available to you, and drop down to lower-level abstractions when measurement shows that they are needed.
+</code></pre>
+
+<p>简意是：尽可能用更高级抽象的方法。但前面提到的StackOverflow里的讨论里却分别说出了两者的优缺点：</p>
+
+<p><strong>NSOperation好处：</strong></p>
+
+<ul>
+<li>很容易设置两个NSOperation之间的依赖来让某一个操作在上一个操作完成后才执行</li>
+<li>方便设置在同一时间运行的操作个数</li>
+<li><p>您可以创建操作,支持在第一时间被取消</p></li>
+<li><p>bandwidth-constrained queues that only run N operations at a time</p></li>
+<li>establishing dependencies between operations</li>
+<li>you can create operations that support being cancelled in the first place</li>
+</ul>
+
+
+<p><strong>GCD好处：</strong></p>
+
+<ul>
+<li>NSOperation对象在创建或释放过程中会消耗明显的CPU资源</li>
+<li><p>使用Blocks后代码比使用NSOperation更简洁</p></li>
+<li><p>The NSOperation object allocation and deallocation process took a significant amount of CPU resources when dealing with small and frequent actions, like rendering an OpenGL ES frame to the screen. GCD blocks completely eliminated that overhead, leading to significant performance improvements.</p></li>
+<li>code is cleaner when using blocks than NSOperations.</li>
+</ul>
+
+
+<p>当然，具体使用哪一个还是要看你的使用场合了。</p>
+</div>
+
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style addthis_16x16_style">
+	
+	<a class="addthis_button_sinaweibo"></a>
+	
+	
+	<a class="addthis_button_facebook"></a>
+	
+	
+	
+	
+	<a class="addthis_button_compact"></a>
+	<a class="addthis_counter addthis_bubble_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/300/addthis_widget.js#pubid="></script>
+</div>
+
+
+
+<section id="comment">
+    <h1 class="title">Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+</section>
+</div>
+			</div>
+			<footer id="footer" class="inner"><p>
+	Copyright &copy; 2014 - 
+	
+    	Alvin Zhu
+	 - 
+	Powered by <a href="http://octopress.org">Octopress</a>
+</p>
+
+Design credit: <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a></footer>
+			<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
+
+
+<script type="text/javascript">
+      var disqus_shortname = 'alvinzhusblog';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://gbammc.github.io/blog/2013/10/06/iosde-duo-xian-cheng-fen-lei-yu-ying-yong/';
+        var disqus_url = 'http://gbammc.github.io/blog/2013/10/06/iosde-duo-xian-cheng-fen-lei-yu-ying-yong/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+	<script type="text/javascript">
+		var _gaq = _gaq || [];
+		_gaq.push(['_setAccount', 'UA-44493661-1']);
+		_gaq.push(['_trackPageview']);
+
+		(function() {
+			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+			ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		})();
+	</script>
+
+
+
+		</div>
+	</div>
+</body>
+</html>

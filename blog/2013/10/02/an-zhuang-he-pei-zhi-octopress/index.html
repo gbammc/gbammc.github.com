@@ -1,0 +1,389 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>安装和配置Octopress - Alvin Zhu</title>
+	<meta name="author" content="Alvin Zhu">
+
+	
+	<meta name="description" content="安装和配置Octopress 前言： 在平时的学习中，深深受益于网络上很多乐意分享自己学习成果的大牛，因此也想找一个途径来记录并分享自己的学习情况，并希望藉此能促进自己的练级速度和深度，所以最终也决定以写blog的形式来做这件事。 最近程序猿界流行用Octopress + Github &hellip;">
+	<meta name="keywords" content="ios,octopress,ruby,gem,github">
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Alvin Zhu" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://gbammc.github.io/blog/2013/10/02/an-zhuang-he-pei-zhi-octopress/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,400,700' rel='stylesheet' type='text/css'>
+	
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">	
+	<script src="/javascripts/md5.js"></script>
+	<script type="text/javascript">
+		document.write("<img src='http://www.gravatar.com/avatar/" + MD5("gbammc@gmail.com") + "?s=160' alt='Profile Picture' style='width: 160px;' />");
+	</script>
+</div>
+<h1><a href="/">Alvin Zhu</a></h1>
+<p class="subtitle">"人类渺小，<br>但不代表我要永世困于壁内。"</p>
+<nav id="main-nav"><ul class="main">
+	<li><a href="/">首页</a></li>
+	<li><a href="/blog/archives">全部文章</a></li>
+	<li><a href="/blog/categories">分类列表</a></li>
+	<li><a href="/about">关于我</a></li>
+	<li><a href="/friends">友情链接</a></li>
+	<li><a href="https://itunes.apple.com/cn/app/id574437211">ifanr - 爱范儿客户端</a></li>
+	<li><a href="https://itunes.apple.com/cn/app/id611036705">数读 - 用数字读懂世界</a></li>
+	<li><a href="http://www.scau123.com/hnb/">iSCAU - 华农学子必备</a></li>
+</ul></nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+		<a class="weibo" href="http://www.weibo.com/blackteafeng" title="Weibo">Weibo</a>
+		
+		
+		
+		<a class="google" href="https://plus.google.com/101572322776670119375" rel="author" title="Google+">Google+</a>
+		
+		
+		<a class="twitter" href="http://twitter.com/alvin_zhu" title="Twitter">Twitter</a>
+		
+		
+		<a class="github" href="https://github.com/gbammc" title="GitHub">GitHub</a>
+		
+		
+		
+		
+		
+		
+		
+		<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			
+				
+			
+			<div class="mid-col-container">
+				<div id="content" class="inner"><article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<h1 class="title" itemprop="name">安装和配置Octopress</h1>
+	<div class="entry-content" itemprop="articleBody"><h2>前言：</h2>
+
+<p>在平时的学习中，深深受益于网络上很多乐意分享自己学习成果的大牛，因此也想找一个途径来记录并分享自己的学习情况，并希望藉此能促进自己的练级速度和深度，所以最终也决定以写blog的形式来做这件事。</p>
+
+<p>最近程序猿界流行用Octopress + Github Pages的方式来搭建自己的个人blog，所以也就跟风学习一下。（主要是觉得Octopress是开源的，自由度很高，不像某度，某sdn等，会强插各种没用的广告或效果。<strong>Less is more.</strong> 越纯粹，越好。）</p>
+
+<!-- more -->
+
+
+<hr />
+
+<h2>安装：</h2>
+
+<p>不知道什么原因，跟着<a href="http://octopress.org/">Octopress</a>官网的教程一步步做，在输入<code>rake deploy</code>后会出现以下问题：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c">## Pushing generated _deploy website</span>
+</span><span class='line'>To git@github.com:gbammc/gbammc.github.io.git
+</span><span class='line'> ! <span class="o">[</span>rejected<span class="o">]</span>        master -&gt; master <span class="o">(</span>non-fast-forward<span class="o">)</span>
+</span><span class='line'>error: failed to push some refs to <span class="s1">&#39;git@github.com:gbammc/gbammc.github.io.git&#39;</span>
+</span><span class='line'>hint: Updates were rejected because the tip of your current branch is behind
+</span><span class='line'>hint: its remote counterpart. Merge the remote changes <span class="o">(</span>e.g. <span class="s1">&#39;git pull&#39;</span><span class="o">)</span>
+</span><span class='line'>hint: before pushing again.
+</span><span class='line'>hint: See the <span class="s1">&#39;Note about fast-forwards&#39;</span> in <span class="s1">&#39;git push --help&#39;</span> <span class="k">for </span>details.
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>又经过多次搜索大牛的文章以后，终于在按照<a href="http://evsseny.appspot.com/2012/03/30/Octopress-blog-install.html">这里</a>的步骤以后安装完成。为免日后找不到，就在这里再列一下吧。</p>
+
+<h3>安装rvm和ruby</h3>
+
+<p>首先安装rvm：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>bash -s stable &lt; &lt;<span class="o">(</span>curl -s https://raw.github.com/wayneeseguin/rvm/master/binscripts/rvm-installer<span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p></p>
+
+<p>然后设置classpath ( shell 下 )：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nb">echo</span> <span class="err">&#39;</span><span class="o">[[</span> -s <span class="s2">&quot;$HOME/.rvm/scripts/rvm&quot;</span> <span class="o">]]</span> <span class="o">&amp;&amp;</span> . <span class="s2">&quot;$HOME/.rvm/scripts/rvm&quot;</span>
+</span><span class='line'><span class="nb">source</span> ~/.bash_profile
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>最后安装ruby：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>rvm install 1.9.3 <span class="o">&amp;&amp;</span> rvm use 1.9.3
+</span><span class='line'>rvm rubygems latest
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>最新版的Octopress只支持ruby 1.9.3版本以上，所以已经安装旧版ruby的同学还需升级一下。</p>
+
+<h3>安装Octopress</h3>
+
+<p>先从github上将源码clone下来：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>git clone git://github.com/imathis/octopress.git octopress    <span class="c"># 从github clone octopress的源代码，后面的octopress是本地存放文件夹的名称，可以自定</span>
+</span><span class='line'><span class="nb">cd </span>octopress      <span class="c"># 进入所选的文件夹</span>
+</span><span class='line'>ruby --version    <span class="c"># 应该显示Ruby 1.9.3</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后安装一些依赖：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>gem install bundler
+</span><span class='line'>bundle install
+</span><span class='line'>rake install    <span class="c"># 安装主题</span>
+</span><span class='line'>rake preview    <span class="c"># 本地预览 （http://localhost:4000/）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>把blog部署到github：</h3>
+
+<p>创建一个名称为user_name.github.com的repo（必须使用username.github.com这种格式命名仓库，页面生成需要几分钟的时间才可以正常访问<code>http://user_name.github.com</code>或者<code>http://user_name.github.io</code>）</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>rake setup_github_pages <span class="c"># 和github创建关联</span>
+</span><span class='line'>git@github.com:your_username/your_username.github.com.git   <span class="c"># 按提示输入github URL</span>
+</span><span class='line'>rake generate <span class="c"># 把你所有编辑的内容生成你的Blog静态页面</span>
+</span><span class='line'>rake deploy   <span class="c"># &lt;span class=&quot;goog_qs-tidbit goog_qs-tidbit-0&quot;&gt;如果检查没有任何问题就可以 push 你的 blog 到 github master branch&lt;/span&gt; </span>
+</span><span class='line'>＃ 状态检查
+</span><span class='line'><span class="nb">cd</span> ~/octopress
+</span><span class='line'>git status   <span class="c"># 应该显示 On branch source</span>
+</span><span class='line'><span class="nb">cd </span>_deploy/  <span class="c"># 应该显示 On branch master</span>
+</span><span class='line'>＃ 最后提交到source branch
+</span><span class='line'>git add .
+</span><span class='line'>git commit -m <span class="s1">&#39;first commit&#39;</span>
+</span><span class='line'>git push origin <span class="nb">source</span> <span class="c"># 如果这一步出错，请再次检查仓库名称是否按要求命名，同时检查Admin面板下Default Branch是否为 master</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>但是到这里，当我去看Admin面板时，却只有source这个分支，而没有master分支，只有当我提交一篇文章后，master分支才出现。可能是因为Octopress的源文件都存放于source分支下，而deploy的都在master分支上。<a href="http://huanggang.me/archives/654">这里</a>有相关解释</p>
+
+<pre><code>还有很重要的一步是把你的修改(文本修改，不包含”_deploy”目录，”deploy”目录保存;
+”rake generate”生成的静态页面内容，会被”rake deploy”命令提交到”master branch”)
+放到你的github pages(“source” branch)上
+</code></pre>
+
+<h3>更新Octopress</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>git pull octopress master     <span class="c"># Get the latest Octopress</span>
+</span><span class='line'>bundle install                <span class="c"># Keep gems updated</span>
+</span><span class='line'>rake update_source            <span class="c"># update the template&#39;s source</span>
+</span><span class='line'>rake update_style             <span class="c"># update the template&#39;s style</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>写博客方法</h3>
+
+<p>写博客主要是用以下几个命令，<a href="http://octopress.org/docs/blogging/">这里</a>有详细介绍：</p>
+
+<ul>
+<li>rake new_post[‘article name’] 生成博文框架，然后修改在source/_posts/下生成的文件即可</li>
+<li>rake generate 生成静态文件</li>
+<li>rake watch 检测文件变化，实时生成新内容</li>
+<li>rake preview 在本机4000端口生成访问内容</li>
+<li>rake deploy 发布文件</li>
+</ul>
+
+
+<p>博文是采用markdown语法，另外增加了一些扩充的插件，markdown的介绍文章网上可以搜到很多，比如<a href="http://daringfireball.net/projects/markdown/">这个</a>。</p>
+
+<hr />
+
+<h2>我的配置</h2>
+
+<h3>分享和评论</h3>
+
+<p>因为GFW的原因，我们需要先删除一些东西，不然会造成加载很慢的情况。</p>
+
+<ul>
+<li>/_config.yml，把里面的twitter相关信息全部删掉</li>
+<li>/source/_includes/custom/head.html 把google的自定义字体去掉，原因同上。</li>
+</ul>
+
+
+<p>在/_config.yml 这个配置文件里的每一项都有相应的注释，可以改一些博客头，作者名之类的东西。</p>
+
+<p>而配置评论和分享到微博功能。步骤如下：</p>
+
+<ul>
+<li>在_config.yml中增加一项： weibo_share: true</li>
+<li>修改 source/_includes/post/sharing.html ，增加：</li>
+</ul>
+
+
+<br/>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>// 下面的大括号是全角的，如果复制，请自行改成半角
+</span><span class='line'>｛% <span class="k">if </span>site.weibo_share %｝
+</span><span class='line'>｛% include post/weibo.html %｝
+</span><span class='line'>｛% endif %｝
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>增加文件：source/_includes/post/weibo.html</li>
+<li>访问 <a href="http://www.jiathis.com/">http://www.jiathis.com/</a> ，获取分享的代码</li>
+<li>访问 <a href="http://uyan.cc/">http://uyan.cc/</a> ，获得评论的代码</li>
+<li>将上面2步的代码都加入到weibo.html中即可</li>
+</ul>
+
+
+<h3>主题</h3>
+
+<p>如果需要使用像我这样的主题，那么请参考这个：<a href="http://shashankmehta.in/archive/2012/greyshade.html">Introducing an Octopress Theme, Greyshade!</a></p>
+
+<p>还需要带微博或Dribble分享的话，请参考这个：<a href="http://www.imallen.com/blog/2013/05/12/add-support-for-weibo-and-dribbble-to-greyshade.html">为 Octopress 的 Greyshade 主题增加新浪微博和 Dribbble 的支持</a></p>
+
+<h3>更多参考博文(注：侧栏设置并不适用于Greyshade主题)：</h3>
+
+<p><a href="http://shanewfx.github.io/blog/2012/08/13/improve-blog-theme/">Octopress主题改造</a></p>
+
+<p><a href="http://www.yanjiuyanjiu.com/blog/20130402/">我的Octopress配置</a></p>
+</div>
+
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style addthis_16x16_style">
+	
+	<a class="addthis_button_sinaweibo"></a>
+	
+	
+	<a class="addthis_button_facebook"></a>
+	
+	
+	
+	
+	<a class="addthis_button_compact"></a>
+	<a class="addthis_counter addthis_bubble_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/300/addthis_widget.js#pubid="></script>
+</div>
+
+
+
+<section id="comment">
+    <h1 class="title">Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+</section>
+</div>
+			</div>
+			<footer id="footer" class="inner"><p>
+	Copyright &copy; 2014 - 
+	
+    	Alvin Zhu
+	 - 
+	Powered by <a href="http://octopress.org">Octopress</a>
+</p>
+
+Design credit: <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a></footer>
+			<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
+
+
+<script type="text/javascript">
+      var disqus_shortname = 'alvinzhusblog';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://gbammc.github.io/blog/2013/10/02/an-zhuang-he-pei-zhi-octopress/';
+        var disqus_url = 'http://gbammc.github.io/blog/2013/10/02/an-zhuang-he-pei-zhi-octopress/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+	<script type="text/javascript">
+		var _gaq = _gaq || [];
+		_gaq.push(['_setAccount', 'UA-44493661-1']);
+		_gaq.push(['_trackPageview']);
+
+		(function() {
+			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+			ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		})();
+	</script>
+
+
+
+		</div>
+	</div>
+</body>
+</html>

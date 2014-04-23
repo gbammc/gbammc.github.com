@@ -1,0 +1,404 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Solr和Sunspot全文索引使用方法和一般问题解决办法 - Alvin Zhu</title>
+	<meta name="author" content="Alvin Zhu">
+
+	
+	<meta name="description" content="Solr和Sunspot全文索引使用方法和一般问题解决办法 最近做的一个项目有全文搜索的需求，而Solr经过多年的发展，已经有完善的文档和社区支持，所以我就尝试用它作为搜索引擎。因为使用过程中遇到了几个坑，因此想记录下来，同时也希望这篇文章能帮到遇上同样问题的人:] Solr &amp;&amp &hellip;">
+	<meta name="keywords" content="solr, sunspot, rails, ruby, 全文索引, 分词, 全文搜索, 问题">
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Alvin Zhu" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://gbammc.github.io/blog/2014/02/16/using-solr-and-sunspot-in-ruby/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,400,700' rel='stylesheet' type='text/css'>
+	
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">	
+	<script src="/javascripts/md5.js"></script>
+	<script type="text/javascript">
+		document.write("<img src='http://www.gravatar.com/avatar/" + MD5("gbammc@gmail.com") + "?s=160' alt='Profile Picture' style='width: 160px;' />");
+	</script>
+</div>
+<h1><a href="/">Alvin Zhu</a></h1>
+<p class="subtitle">"人类渺小，<br>但不代表我要永世困于壁内。"</p>
+<nav id="main-nav"><ul class="main">
+	<li><a href="/">首页</a></li>
+	<li><a href="/blog/archives">全部文章</a></li>
+	<li><a href="/blog/categories">分类列表</a></li>
+	<li><a href="/about">关于我</a></li>
+	<li><a href="/friends">友情链接</a></li>
+	<li><a href="https://itunes.apple.com/cn/app/id574437211">ifanr - 爱范儿客户端</a></li>
+	<li><a href="https://itunes.apple.com/cn/app/id611036705">数读 - 用数字读懂世界</a></li>
+	<li><a href="http://www.scau123.com/hnb/">iSCAU - 华农学子必备</a></li>
+</ul></nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+		<a class="weibo" href="http://www.weibo.com/blackteafeng" title="Weibo">Weibo</a>
+		
+		
+		
+		<a class="google" href="https://plus.google.com/101572322776670119375" rel="author" title="Google+">Google+</a>
+		
+		
+		<a class="twitter" href="http://twitter.com/alvin_zhu" title="Twitter">Twitter</a>
+		
+		
+		<a class="github" href="https://github.com/gbammc" title="GitHub">GitHub</a>
+		
+		
+		
+		
+		
+		
+		
+		<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			
+				
+			
+			<div class="mid-col-container">
+				<div id="content" class="inner"><article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<h1 class="title" itemprop="name">Solr和Sunspot全文索引使用方法和一般问题解决办法</h1>
+	<div class="entry-content" itemprop="articleBody"><p>最近做的一个项目有全文搜索的需求，而Solr经过多年的发展，已经有完善的文档和社区支持，所以我就尝试用它作为搜索引擎。因为使用过程中遇到了几个坑，因此想记录下来，同时也希望这篇文章能帮到遇上同样问题的人:]</p>
+
+<!-- more -->
+
+
+<p> Solr &amp;&amp; Sunspot
+Solr是一个开源的搜索服务器，Solr使用Java语言开发，主要基于HTTP和Apache Lucene而实现。定制Solr索引的实现方法很简单，用POST方法向Solr服务器发送一个描述所有Field及其内容的XML文档就可以了。定制搜索的时候只需要发送HTTP的GET请求即可。</p>
+
+<p>而在Ruby下使用Sunspot这个Gem就足够了，因为里面已经封装了Solr的底层操作，提供简单而强大的索引和查找对象功能，同时也支持各种ORM。</p>
+
+<h1>安装</h1>
+
+<p>首先，如上所述，要运行Solr，你要先有Java运行环境，还没安装的话就请移步到Google搜索安装方法，这里就不多说了。</p>
+
+<p>毫无疑问，要在Gemfile中添加：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">gem</span> <span class="s1">&#39;sunspot_rails&#39;</span>
+</span><span class='line'><span class="n">gem</span> <span class="s1">&#39;sunspot_solr&#39;</span> <span class="c1"># optional pre-packaged Solr distribution for use in development</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后毫无疑问是Bundle：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">bundle</span> <span class="n">install</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>接着生成配置文件<code>config/sunspot.yml</code>：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">rails</span> <span class="n">generate</span> <span class="n">sunspot_rails</span><span class="ss">:install</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果安装<code>sunspot_solr</code>了，那么就运行它：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">bundle</span> <span class="nb">exec</span> <span class="n">rake</span> <span class="ss">sunspot</span><span class="p">:</span><span class="ss">solr</span><span class="p">:</span><span class="n">start</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>至此，Solr就应该能跑起来了。</p>
+
+<p>至于要关闭它，也只要把<code>start</code>换成<code>stop</code>即可：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">bundle</span> <span class="nb">exec</span> <span class="n">rake</span> <span class="ss">sunspot</span><span class="p">:</span><span class="ss">solr</span><span class="p">:</span><span class="n">start</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>对象设置</h1>
+
+<p>对象设置也和安装一样简单，只要在model里添加一个<code>searchable</code>的block指明需要索引的字段和查询范围即可，例如：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">School</span> <span class="o">&lt;</span> <span class="ss">ActiveRecord</span><span class="p">:</span><span class="ss">:Base</span>
+</span><span class='line'>  <span class="n">searchable</span> <span class="k">do</span>
+</span><span class='line'>    <span class="n">text</span> <span class="ss">:name</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">time</span> <span class="ss">:found_at</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">attr_accessible</span> <span class="ss">:name</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>那么被<code>text</code>声明的字段就会作为全文索引，至于<code>time</code>或其它Sunspot可以使用的类型(boolean, integer, string等)就会作为查询范围时使用。</p>
+
+<h1>对象查找</h1>
+
+<p>继续用上面的model作为例子，当我们需要查找校名，那么可以设定这样一个方法：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">search_school</span><span class="p">(</span><span class="n">school_name</span><span class="p">)</span>
+</span><span class='line'>  <span class="vi">@schools</span> <span class="o">=</span> <span class="no">School</span><span class="o">.</span><span class="n">search</span> <span class="k">do</span>
+</span><span class='line'>    <span class="n">fulltext</span> <span class="n">school_name</span>
+</span><span class='line'>  <span class="k">end</span><span class="o">.</span><span class="n">results</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">return</span> <span class="vi">@schools</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>很好，这就完成啦！<code>fulltext</code>后面跟着的就是搜索的关键词，查询的结果通过<code>#results</code>方法取出。</p>
+
+<h1>Reindex</h1>
+
+<p>当我们在School中添加或删除记录时，sunpost自动就会帮我们重新reindex，但如果我们需要添加新的字段或不得不需要手动reindex时，可以使用如下指令：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">rake</span> <span class="ss">sunspot</span><span class="p">:</span><span class="n">redinex</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>几个开发中遇到的问题</h1>
+
+<ul>
+<li><h2>中文搜索</h2></li>
+</ul>
+
+
+<p>如果想让Solr支持中文也十分简单，只要将设定中的tokenizer替换成你想使用的分词系统即可，而Solr内建简单的CJK分词系统，只要将<code>solr/conf/schema.xml</code>大概第64行换成：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="o">&lt;</span><span class="n">tokenizer</span> <span class="n">class</span><span class="o">=</span><span class="s2">&quot;solr.CJKTokenizerFactory&quot;</span><span class="o">/&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后重启Solr并且reindex应该就能使用了。</p>
+
+<ul>
+<li><h2>undefined method `results&#8217; for #&lt;MetaSearch::Searches &hellip;</h2></li>
+</ul>
+
+
+<p>如果出现以下的问题，</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">undefined</span> <span class="nb">method</span> <span class="sb">`results&#39; for #&lt;MetaSearch::Searches::School:0x007fda483ef128&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>那可能是因为你同时安装了MetaSearch或像ActiveAdmin这些用了MetaSearch的Gem，而和Solr发生了冲突，解决办法是把搜索方法改成这样：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">search_school</span><span class="p">(</span><span class="n">school_name</span><span class="p">)</span>
+</span><span class='line'>  <span class="vi">@schools</span> <span class="o">=</span> <span class="no">School</span><span class="o">.</span><span class="n">solr_search</span> <span class="k">do</span>
+</span><span class='line'>    <span class="n">fulltext</span> <span class="n">school_name</span>
+</span><span class='line'>  <span class="k">end</span><span class="o">.</span><span class="n">results</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">return</span> <span class="vi">@schools</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>或这样：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">search_school</span><span class="p">(</span><span class="n">school_name</span><span class="p">)</span>
+</span><span class='line'>  <span class="vi">@schools</span> <span class="o">=</span> <span class="no">Sunspot</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="no">School</span><span class="p">)</span> <span class="k">do</span>
+</span><span class='line'>    <span class="n">fulltext</span> <span class="n">school_name</span>
+</span><span class='line'>  <span class="k">end</span><span class="o">.</span><span class="n">results</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">return</span> <span class="vi">@schools</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li><h2>Request Data: &ldquo;&lt;?xml version=&#34;1.0\&rdquo; encoding=\&ldquo;UTF-8\&rdquo;?>type:Match&#8221; &hellip;</h2></li>
+</ul>
+
+
+<p>而如果在production中出现404 xxx</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">rake</span> <span class="ss">sunspot</span><span class="p">:</span><span class="n">reindex</span>
+</span><span class='line'><span class="n">rake</span> <span class="n">aborted!</span>
+</span><span class='line'><span class="ss">RSolr</span><span class="p">:</span><span class="ss">:Error</span><span class="o">::</span><span class="no">Http</span> <span class="o">-</span> <span class="mi">404</span> <span class="no">Not</span> <span class="no">Found</span>
+</span><span class='line'><span class="ss">Error</span><span class="p">:</span> <span class="no">Not</span> <span class="no">Found</span>
+</span><span class='line'>
+</span><span class='line'><span class="no">Request</span> <span class="ss">Data</span><span class="p">:</span> <span class="s2">&quot;&lt;?xml version=</span><span class="se">\&quot;</span><span class="s2">1.0</span><span class="se">\&quot;</span><span class="s2"> encoding=</span><span class="se">\&quot;</span><span class="s2">UTF-8</span><span class="se">\&quot;</span><span class="s2">?&gt;type:Match&quot;</span> <span class="o">.</span><span class="n">.</span><span class="o">.</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以先尝试修改<code>config/sunspot.yml</code>中的：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="ss">production</span><span class="p">:</span>
+</span><span class='line'>   <span class="ss">solr</span><span class="p">:</span>
+</span><span class='line'><span class="o">.</span><span class="n">.</span><span class="o">.</span>
+</span><span class='line'>      <span class="ss">path</span><span class="p">:</span> <span class="sr">/solr/</span><span class="n">production</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>改为：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'> <span class="ss">production</span><span class="p">:</span>
+</span><span class='line'>   <span class="ss">solr</span><span class="p">:</span>
+</span><span class='line'><span class="o">.</span><span class="n">.</span><span class="o">.</span>
+</span><span class='line'>      <span class="ss">path</span><span class="p">:</span> <span class="sr">/solr/</span><span class="n">default</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>相关链接</h1>
+
+<ul>
+<li><p><a href="https://github.com/sunspot/sunspot">Sunspot in Github</a></p></li>
+<li><p><a href="http://wwangcg.iteye.com/blog/1327670">Lucene的分词原理与分词系统</a></p></li>
+</ul>
+
+</div>
+
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style addthis_16x16_style">
+	
+	<a class="addthis_button_sinaweibo"></a>
+	
+	
+	<a class="addthis_button_facebook"></a>
+	
+	
+	
+	
+	<a class="addthis_button_compact"></a>
+	<a class="addthis_counter addthis_bubble_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/300/addthis_widget.js#pubid="></script>
+</div>
+
+
+
+<section id="comment">
+    <h1 class="title">Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+</section>
+</div>
+			</div>
+			<footer id="footer" class="inner"><p>
+	Copyright &copy; 2014 - 
+	
+    	Alvin Zhu
+	 - 
+	Powered by <a href="http://octopress.org">Octopress</a>
+</p>
+
+Design credit: <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a></footer>
+			<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
+
+
+<script type="text/javascript">
+      var disqus_shortname = 'alvinzhusblog';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://gbammc.github.io/blog/2014/02/16/using-solr-and-sunspot-in-ruby/';
+        var disqus_url = 'http://gbammc.github.io/blog/2014/02/16/using-solr-and-sunspot-in-ruby/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+	<script type="text/javascript">
+		var _gaq = _gaq || [];
+		_gaq.push(['_setAccount', 'UA-44493661-1']);
+		_gaq.push(['_trackPageview']);
+
+		(function() {
+			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+			ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		})();
+	</script>
+
+
+
+		</div>
+	</div>
+</body>
+</html>

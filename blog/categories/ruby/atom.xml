@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Ruby | Alvin Zhu]]></title>
+  <link href="http://gbammc.github.io/blog/categories/ruby/atom.xml" rel="self"/>
+  <link href="http://gbammc.github.io/"/>
+  <updated>2014-04-22T23:57:55+08:00</updated>
+  <id>http://gbammc.github.io/</id>
+  <author>
+    <name><![CDATA[Alvin Zhu]]></name>
+    <email><![CDATA[gbammc@gmail.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Solr和Sunspot全文索引使用方法和一般问题解决办法]]></title>
+    <link href="http://gbammc.github.io/blog/2014/02/16/using-solr-and-sunspot-in-ruby/"/>
+    <updated>2014-02-16T01:20:00+08:00</updated>
+    <id>http://gbammc.github.io/blog/2014/02/16/using-solr-and-sunspot-in-ruby</id>
+    <content type="html"><![CDATA[<p>最近做的一个项目有全文搜索的需求，而Solr经过多年的发展，已经有完善的文档和社区支持，所以我就尝试用它作为搜索引擎。因为使用过程中遇到了几个坑，因此想记录下来，同时也希望这篇文章能帮到遇上同样问题的人:]</p>
+
+<!-- more -->
+
+
+<p> Solr &amp;&amp; Sunspot
+Solr是一个开源的搜索服务器，Solr使用Java语言开发，主要基于HTTP和Apache Lucene而实现。定制Solr索引的实现方法很简单，用POST方法向Solr服务器发送一个描述所有Field及其内容的XML文档就可以了。定制搜索的时候只需要发送HTTP的GET请求即可。</p>
+
+<p>而在Ruby下使用Sunspot这个Gem就足够了，因为里面已经封装了Solr的底层操作，提供简单而强大的索引和查找对象功能，同时也支持各种ORM。</p>
+
+<h1>安装</h1>
+
+<p>首先，如上所述，要运行Solr，你要先有Java运行环境，还没安装的话就请移步到Google搜索安装方法，这里就不多说了。</p>
+
+<p>毫无疑问，要在Gemfile中添加：</p>
+
+<p><code>ruby
+gem 'sunspot_rails'
+gem 'sunspot_solr' # optional pre-packaged Solr distribution for use in development
+</code></p>
+
+<p>然后毫无疑问是Bundle：</p>
+
+<p><code>ruby
+bundle install
+</code></p>
+
+<p>接着生成配置文件<code>config/sunspot.yml</code>：</p>
+
+<p><code>ruby
+rails generate sunspot_rails:install
+</code></p>
+
+<p>如果安装<code>sunspot_solr</code>了，那么就运行它：</p>
+
+<p><code>ruby
+bundle exec rake sunspot:solr:start
+</code></p>
+
+<p>至此，Solr就应该能跑起来了。</p>
+
+<p>至于要关闭它，也只要把<code>start</code>换成<code>stop</code>即可：</p>
+
+<p><code>ruby
+bundle exec rake sunspot:solr:start
+</code></p>
+
+<h1>对象设置</h1>
+
+<p>对象设置也和安装一样简单，只要在model里添加一个<code>searchable</code>的block指明需要索引的字段和查询范围即可，例如：</p>
+
+<p>``` ruby
+class School &lt; ActiveRecord::Base
+  searchable do</p>
+
+<pre><code>text :name
+
+time :found_at
+</code></pre>
+
+<p>  end</p>
+
+<p>  attr_accessible :name
+end
+```</p>
+
+<p>那么被<code>text</code>声明的字段就会作为全文索引，至于<code>time</code>或其它Sunspot可以使用的类型(boolean, integer, string等)就会作为查询范围时使用。</p>
+
+<h1>对象查找</h1>
+
+<p>继续用上面的model作为例子，当我们需要查找校名，那么可以设定这样一个方法：</p>
+
+<p>``` ruby
+def search_school(school_name)
+  @schools = School.search do</p>
+
+<pre><code>fulltext school_name
+</code></pre>
+
+<p>  end.results</p>
+
+<p>  return @schools
+end
+```</p>
+
+<p>很好，这就完成啦！<code>fulltext</code>后面跟着的就是搜索的关键词，查询的结果通过<code>#results</code>方法取出。</p>
+
+<h1>Reindex</h1>
+
+<p>当我们在School中添加或删除记录时，sunpost自动就会帮我们重新reindex，但如果我们需要添加新的字段或不得不需要手动reindex时，可以使用如下指令：</p>
+
+<p><code>ruby
+rake sunspot:redinex
+</code></p>
+
+<h1>几个开发中遇到的问题</h1>
+
+<ul>
+<li><h2>中文搜索</h2></li>
+</ul>
+
+
+<p>如果想让Solr支持中文也十分简单，只要将设定中的tokenizer替换成你想使用的分词系统即可，而Solr内建简单的CJK分词系统，只要将<code>solr/conf/schema.xml</code>大概第64行换成：</p>
+
+<p><code>ruby
+&lt;tokenizer class="solr.CJKTokenizerFactory"/&gt;
+</code></p>
+
+<p>然后重启Solr并且reindex应该就能使用了。</p>
+
+<ul>
+<li><h2>undefined method `results' for #&lt;MetaSearch::Searches &hellip;</h2></li>
+</ul>
+
+
+<p>如果出现以下的问题，</p>
+
+<p><code>ruby
+undefined method `results' for #&lt;MetaSearch::Searches::School:0x007fda483ef128&gt;
+</code></p>
+
+<p>那可能是因为你同时安装了MetaSearch或像ActiveAdmin这些用了MetaSearch的Gem，而和Solr发生了冲突，解决办法是把搜索方法改成这样：</p>
+
+<p>``` ruby
+def search_school(school_name)
+  @schools = School.solr_search do</p>
+
+<pre><code>fulltext school_name
+</code></pre>
+
+<p>  end.results</p>
+
+<p>  return @schools
+end
+```</p>
+
+<p>或这样：</p>
+
+<p>``` ruby
+def search_school(school_name)
+  @schools = Sunspot.search(School) do</p>
+
+<pre><code>fulltext school_name
+</code></pre>
+
+<p>  end.results</p>
+
+<p>  return @schools
+end
+```</p>
+
+<ul>
+<li><h2>Request Data: &ldquo;&lt;?xml version=\"1.0\&rdquo; encoding=\&ldquo;UTF-8\&rdquo;?>type:Match" &hellip;</h2></li>
+</ul>
+
+
+<p>而如果在production中出现404 xxx</p>
+
+<p>``` ruby
+rake sunspot:reindex
+rake aborted!
+RSolr::Error::Http &ndash; 404 Not Found
+Error: Not Found</p>
+
+<p>Request Data: &ldquo;&lt;?xml version=\"1.0\&rdquo; encoding=\&ldquo;UTF-8\&rdquo;?>type:Match" &hellip;
+```</p>
+
+<p>可以先尝试修改<code>config/sunspot.yml</code>中的：</p>
+
+<p>``` ruby
+production:
+   solr:
+&hellip;</p>
+
+<pre><code>  path: /solr/production
+</code></pre>
+
+<p>```</p>
+
+<p>改为：</p>
+
+<p>``` ruby</p>
+
+<p> production:
+   solr:
+&hellip;</p>
+
+<pre><code>  path: /solr/default
+</code></pre>
+
+<p>```</p>
+
+<h1>相关链接</h1>
+
+<ul>
+<li><p><a href="https://github.com/sunspot/sunspot">Sunspot in Github</a></p></li>
+<li><p><a href="http://wwangcg.iteye.com/blog/1327670">Lucene的分词原理与分词系统</a></p></li>
+</ul>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[[译]我是怎样学习测试我的Rails应用的-Part1:开端]]></title>
+    <link href="http://gbammc.github.io/blog/2014/01/20/wo-shi-zen-yang-xue-xi-ce-shi-wo-de-railsying-yong-de-part1-kai-duan/"/>
+    <updated>2014-01-20T10:34:00+08:00</updated>
+    <id>http://gbammc.github.io/blog/2014/01/20/wo-shi-zen-yang-xue-xi-ce-shi-wo-de-railsying-yong-de-part1-kai-duan</id>
+    <content type="html"><![CDATA[<p>最近在学习Rails的开发过程中深感TDD和BDD的好处，开发效率远比没有使用测试的时候高。例如：当项目需求突然有变时，在修改部分代码后，为了确保程序还能如常运行，就不得不再手动测试各个页面。而且正如卷福所说：人总是会犯错的，所以还不能保证每次都测试出所有错误。但使用TDD和BDD后，只要保证有足够多的测试样例来覆盖程序中各个部分，那么每次修改后都只要轻轻一运行测试样例，那么所有bug都将无处遁形。</p>
+
+<p><a href="http://everydayrails.com/">原作者</a>通过一系列的文章深入浅出地介绍了自己是怎样测试自己的程序的，个人打算将其翻译出来，希望藉此提升自己的能力的同时，能帮助更多的人使用TDD和BDD进行开发。而这是该系列的第一篇(<a href="http://everydayrails.com/2012/03/12/testing-series-intro.html">How I learned to test my Rails applications, Part 1: Introduction</a>)。不过本人翻译过的文章不多，如有错误，诚挚希望进行指教:]</p>
+
+<!-- more -->
+
+
+<hr />
+
+<p>Ruby On Rails和自动化测试，两者可谓齐头并进。Rails带有内建的测试框架，但如果这不是你的菜的话还能替换成自己喜欢的。所以，测试对Rails是非常重要的 &mdash; 不过有很多Rails开发者可能没有测试他们的项目，或者只是充其量地添加一些简单的模型验证。</p>
+
+<p>可能对于开发Ruby或Web框架的人来说这是一个很新的概念。可能是觉得这会增加额外的工作。或者这会让他感到时间紧迫 &mdash; 花时间在写测试上会影相完成新需求的进度。或者是在浏览器上点击链接的测试习惯很难改变。</p>
+
+<p>我曾经也是如此，我从1995年开始开发Web程序，但通常就像开发小型项目的独立开发者那样。除了小时候学过一下BASIC，在大学学过一些C++，还有在毕业后我的第二份工作中浪费了一个星期的Java，我从来没有好好地学习过软件开发。事实上，直到2005年，当我受够丑陋的意大利面条式的Php代码后，我发现一种更好的Web程序开发方法。</p>
+
+<p>我以前曾关注过Ruby，不过直到Rails流行前都没有深度使用过它。因为这需要学习很多东西 &mdash; 新语言，新架构和更面向对象的方法(a more object-oriented approach)。不过虽然有这些新挑战，我还是能够在以前缺少框架努力的碎片时间下创造出复杂的程序。我知道我被吸引住了。</p>
+
+<p>也就是说，早期Rails的书或指引都是更关注在开发速度上(15分钟搭建一个博客!)而不是更好的测试实践上。就算包括测试的讲解，它通常都是保留在最后一章。新运行于Rails的项目开始注意到这个缺陷，也已经有不少书的内容都有关于测试的章节，不过还缺少一套可行的测试方法。我写这个系列的目的，就是想向您介绍对我的方法。</p>
+
+<h1>谁应该读这些文章</h1>
+
+<p>如果Rails是你第一个使用的Web程序开发框架，而且你以前的编程经验很少涉及到测试，那么这系列会很好地帮助你开始了解测试。如果你真的是Rails的菜鸟，你也能在Michael Hartl的《Rails Tutorial》或者 Sam Ruby的《Agile Web Development with Rails》里看到关于测试的部分。这一系列是假设你已经有基本的Rails使用经验之上的。换句话说，这一系列不会教你怎样使用Rails，它也不会提供内置的测试框架介绍 &mdash; 因为我们将要安装一些额外的工具使我们的测试过程更容易理解和管理。</p>
+
+<p>如果你已经用Rails有一段时间了，或者你已经有一两个Rails产品了，但对测试仍然是一个陌生概念的话，这系列就适合你了。我曾经也和你一样，我在这里分享的技巧帮助我提交我的测试覆盖和使我更像一个测试驱动的开发者。我希望这些也能帮到你。</p>
+
+<p>而如果你已经很熟悉Test::Unit或者RSpec，甚至有一个你已经很熟悉的或已经足够覆盖的工作流程，您可以微调你的一些方法来测试您的应用程序 &mdash; 不过说实在的，你可能已经使用自动化测试了而且不需要这些额外的帮助了。像David Chelimsky的《The RSpec Book》或者 Noel Rappin的《Rails Test Prescriptions》这些书对你来说可能更有用。</p>
+
+<h1>我的测试哲学</h1>
+
+<p>讨论正确的方法来测试你的Rails可能会涉及到圣战 &mdash; 虽然不会像Vim和Emacs的争论那样，但仍然不是一个和其它Ruby开发者能开心讨论的话题。是的，虽然有一种正确的方法来做测试，但是也有正确的层次。</p>
+
+<p>冒着在Ruby的TDD和BDD社区中掀起风暴的危险，我的讨论将关注以下几点：</p>
+
+<ul>
+<li>测试应该是可靠的</li>
+<li>测试应该是易写的</li>
+<li>测试应该是易理解的</li>
+</ul>
+
+
+<p>如果你遵循这3步方法，那么对于你的程序可用的测试套件会有很长的路要走 &ndash; 更不用说成为测试驱动开发的忠实实践者了。</p>
+
+<p>是的，有一些东西需要权衡，特别是：</p>
+
+<ul>
+<li>我们不注重速度</li>
+<li>我们在测试中不关注我们的代码完全DRY</li>
+</ul>
+
+
+<p>最后，最重要的一点是，你将会得到可靠，易理解的测试样例，尽管它们不是很优化，但它们是一个很好的开始。也正是这样，使我免于陷入写大量的程序代码，然后在浏览器上点击"测试"，然后希望运行成功的循环中。而且还获得了完全自动化的测试套件的优势和使用测试驱动开发深挖潜在的bug。</p>
+
+<p>准备好了？来就看第二部分吧:<a href="">配置Rails程序来使用RSpec</a></p>
+]]></content>
+  </entry>
+  
+</feed>

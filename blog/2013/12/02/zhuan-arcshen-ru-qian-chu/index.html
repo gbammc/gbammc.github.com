@@ -1,0 +1,2023 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>[转]ARC深入浅出 - Alvin Zhu</title>
+	<meta name="author" content="Alvin Zhu">
+
+	
+	<meta name="description" content="[转]ARC深入浅出 ARC可谓iOS开发中一大利器，内存管理的大部份问题都能交由系统自动处理了，不过一些不太明显的小坑也需我们多加注意，不然用户在使用中出现闪退，那用户体验就差多了。最近看了@易飞扬 先生一系列关于ARC的博文，觉得非常详细易懂，可惜需要翻墙才能看到，所以转载到这里， &hellip;">
+	<meta name="keywords" content="arc,iphone,ios,内存,strong,weak">
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Alvin Zhu" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://gbammc.github.io/blog/2013/12/02/zhuan-arcshen-ru-qian-chu/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,400,700' rel='stylesheet' type='text/css'>
+	
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">	
+	<script src="/javascripts/md5.js"></script>
+	<script type="text/javascript">
+		document.write("<img src='http://www.gravatar.com/avatar/" + MD5("gbammc@gmail.com") + "?s=160' alt='Profile Picture' style='width: 160px;' />");
+	</script>
+</div>
+<h1><a href="/">Alvin Zhu</a></h1>
+<p class="subtitle">"人类渺小，<br>但不代表我要永世困于壁内。"</p>
+<nav id="main-nav"><ul class="main">
+	<li><a href="/">首页</a></li>
+	<li><a href="/blog/archives">全部文章</a></li>
+	<li><a href="/blog/categories">分类列表</a></li>
+	<li><a href="/about">关于我</a></li>
+	<li><a href="/friends">友情链接</a></li>
+	<li><a href="https://itunes.apple.com/cn/app/id574437211">ifanr - 爱范儿客户端</a></li>
+	<li><a href="https://itunes.apple.com/cn/app/id611036705">数读 - 用数字读懂世界</a></li>
+	<li><a href="http://www.scau123.com/hnb/">iSCAU - 华农学子必备</a></li>
+</ul></nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+		<a class="weibo" href="http://www.weibo.com/blackteafeng" title="Weibo">Weibo</a>
+		
+		
+		
+		<a class="google" href="https://plus.google.com/101572322776670119375" rel="author" title="Google+">Google+</a>
+		
+		
+		<a class="twitter" href="http://twitter.com/alvin_zhu" title="Twitter">Twitter</a>
+		
+		
+		<a class="github" href="https://github.com/gbammc" title="GitHub">GitHub</a>
+		
+		
+		
+		
+		
+		
+		
+		<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			
+				
+			
+			<div class="mid-col-container">
+				<div id="content" class="inner"><article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<h1 class="title" itemprop="name">[转]ARC深入浅出</h1>
+	<div class="entry-content" itemprop="articleBody"><p>ARC可谓iOS开发中一大利器，内存管理的大部份问题都能交由系统自动处理了，不过一些不太明显的小坑也需我们多加注意，不然用户在使用中出现闪退，那用户体验就差多了。最近看了@易飞扬 先生一系列关于ARC的博文，觉得非常详细易懂，可惜需要翻墙才能看到，所以转载到这里，同时对原文内容进行了一些小修改，再次感谢易先生的分享 :P</p>
+
+<!-- more -->
+
+
+<h1>TL;DR</h1>
+
+<p>内存管理依循下面的基本原则:</p>
+
+<ul>
+<li>自己生成的对象，那么即是其持有者</li>
+<li>不是自己生成的对象，也可成为其持有者（一个对象可以被多个人持有）</li>
+<li>如果不想持有对象的时候，必须释放其所有权</li>
+<li>不能释放已不再持有所有权的对象</li>
+</ul>
+
+
+<p>ARC使用准则:</p>
+
+<ul>
+<li>不能使用 retain/release/retainCount/autorelease</li>
+<li>不能使用 NSAllocateObject/NSDeallocateObject</li>
+<li>不能使用 NSZone</li>
+<li>不能明示调用dealloc</li>
+<li>内存管理相关的函数必须遵循命名规则</li>
+<li>使用@autoreleasepool代替NSAutoreleasePool</li>
+<li>Objective-C 对象不能作为C语言结构体（struct/union）的成员</li>
+<li>[id]与[void*]之间需要明示cast</li>
+</ul>
+
+
+<p>原文地址：</p>
+
+<p><a href="http://www.yifeiyang.net/development-of-the-iphone-simply-1/">iPhone开发之深入浅出 (1) — ARC是什么</a> &mdash;&mdash;&mdash; <a href="#1">本文传送门</a></p>
+
+<p><a href="http://www.yifeiyang.net/development-of-the-iphone-simply-2/">iPhone开发之深入浅出 (2) — ARC之@property使用</a> &mdash;&mdash;&mdash; <a href="#2">本文传送门</a></p>
+
+<p><a href="http://www.yifeiyang.net/development-of-the-iphone-simply-3/">iPhone开发之深入浅出 (3) — ARC之前世今生</a> &mdash;&mdash;&mdash; <a href="#3">本文传送门</a></p>
+
+<p><a href="http://www.yifeiyang.net/development-of-the-iphone-simply-4/">iPhone开发之深入浅出 (4) — ARC之循环参照</a> &mdash;&mdash;&mdash; <a href="#4">本文传送门</a></p>
+
+<p><a href="http://www.yifeiyang.net/development-of-the-iphone-simply-5/">iPhone开发之深入浅出 (5) — ARC之Outlet与弱引用</a> &mdash;&mdash;&mdash; <a href="#5">本文传送门</a></p>
+
+<p><a href="http://www.yifeiyang.net/development-of-the-iphone-simply-6/">iPhone开发之深入浅出 (6) — ARC之对象转型</a> &mdash;&mdash;&mdash; <a href="#6">本文传送门</a></p>
+
+<p><a href="http://www.yifeiyang.net/development-of-the-iphone-simply-7/">iPhone开发之深入浅出 (7) — ARC总结</a> &mdash;&mdash;&mdash; <a href="#7">本文传送门</a></p>
+
+<hr />
+
+<h1><span id="1">ARC是什么</span></h1>
+
+<p>ARC是iOS5推出的新功能，全称叫 ARC(Automatic Reference Counting)。简单地说，就是代码中自动加入了retain/release，原先需要手动添加的用来处理内存管理的引用计数的代码可以自动地由编译器完成了。</p>
+
+<h3>使用ARC的好处</h3>
+
+<ul>
+<li>使用ARC后，Objective-C的代码变得简单多了，因为我们不需要担心烦人的内存管理，担心内存泄露了</li>
+<li>代码的总量变少了，看上去清爽了不少，也节省了劳动力</li>
+<li>代码高速化，由于使用编译器管理引用计数，减少了低效代码的可能性</li>
+</ul>
+
+
+<h3>不好的地方</h3>
+
+<ul>
+<li>记住一堆新的ARC规则 — 关键字及特性等需要一定的学习周期；</li>
+<li>一些旧的代码，第三方代码使用的时候比较麻烦；修改代码需要工数，要么修改编译开关</li>
+</ul>
+
+
+<p>如果只想对某个.m文件不应用ARC，可以只针对该类文件加上 -fno-objc-arc 编译FLAGS。（另外如果工程并未打开ARC，而要对某个文件应用ARC，可以加上-fobjc-arc编译FLAGS）</p>
+
+<h3>ARC基本规则</h3>
+
+<ul>
+<li>retain, release, autorelease, dealloc由编译器自动插入，不能在代码中调用</li>
+<li>dealloc虽然可以被重载，但是不能调用[super dealloc]</li>
+</ul>
+
+
+<h3>Objective-C对象</h3>
+
+<p>ObjectiveC中的对象，有强参照(Strong reference)和弱参照(Weak reference)之分，当需要保持其他对象的时候，需要retain以确保对象引用计数加1。对象的持有者(owner)只要存在，那么该对象的强参照就一直存在。</p>
+
+<h5>对象处理的基本规则是</h5>
+
+<ul>
+<li>只要对象的持有者存在（对象被强参照），那么就可以使用该对象</li>
+<li>对象失去了持有者后，即被释放</li>
+</ul>
+
+
+<h3>强参照 (Strong reference)</h3>
+
+<p><img src="/images/arc/ARC_outline_strong.JPG"></p>
+
+<p>(s1)</p>
+
+<p>firstName作为”natsu”字符串对象的最初持有者，是该NSString类型对象的Strong reference。</p>
+
+<p>(s2)</p>
+
+<p>这里将firstName代入到aName中，即aName也成为了@”natsu”字符串对象的持有者，对于该对象，aName也是Strong reference。</p>
+
+<p>(s3)</p>
+
+<p>这里，改变firstName的内容。生成新的字符串对象”maki”。这时候firstName成为”maki”的持有者，而@”natsu”的持有者只有aName。每个字符串对象都有各自的持有者，所以它们都在内存中都存在。</p>
+
+<p>(s4)</p>
+
+<p>追加新的变量otherName, 它将成为@”maki”对象的另一个持有者。即NSString类型对象的Strong reference。</p>
+
+<p>(s5)</p>
+
+<p>将otherName代入到aName，这时，aName将成为@”maki”字符串对象的持有者。而对象@”natsu”已经没有持有者了，该对象将被释放。</p>
+
+<h3>弱参照 (Weak reference)</h3>
+
+<p><img src="/images/arc/ARC_outline_weak.png"></p>
+
+<p>(w1)</p>
+
+<p>与强参照方式同样，firstName作为字符串对象@”natsu”的持有者存在。即是该NSString类型对象的Strong reference。</p>
+
+<p>(w2)</p>
+
+<p>使用关键字__weak，声明弱参照weakName变量，将firstName代入。这时weakName虽然参照@”natsu”，但仍是Weak reference。即weakName虽然能看到@”natsu”，但不是其持有者。</p>
+
+<p>(w3)</p>
+
+<p>firstName指向了新的对象@”maki”，成为其持有者，而对象@”natsu”因为没有了持有者，即被释放。同时weakName变量将被自动代入nil。</p>
+
+<h3>引用关键字</h3>
+
+<p>ARC中关于对象的引用参照，主要有下面几个关键字。使用strong, weak, autoreleasing限定的变量会被隐式初始化为nil。</p>
+
+<h6>__strong</h6>
+
+<p>变量声明缺省都带有__strong关键字，如果变量什么关键字都不写，那么缺省就是强参照。</p>
+
+<h6>__weak</h6>
+
+<p>上面已经看到了，这是弱参照的关键字。该概念是新特性，从 iOS 5/ Mac OS X 10.7 开始导入。由于该类型不影响对象的生命周期，所以如果对象之前就没有持有者，那么会出现刚创建就被释放的问题，比如下面的代码。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">NSString</span> <span class="n">__weak</span> <span class="o">*</span><span class="n">string</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSString</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithFormat:</span><span class="s">@&quot;First Name: %@&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">self</span> <span class="n">firstName</span><span class="p">]];</span>
+</span><span class='line'><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;string: %@&quot;</span><span class="p">,</span> <span class="n">string</span><span class="p">);</span> <span class="c1">//此时 string为空</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果编译设定OS版本 Deployment Target 设定为这比这低的版本，那么编译时将报错(The current deployment target does not support automated __weak references)，这个时候，我们可以使用下面的__unsafe_unretained。</p>
+
+<p>弱参照还有一个特征，即当参数对象失去所有者之后，变量会被自动付上nil (Zeroing)。</p>
+
+<h6>__unsafe_unretained</h6>
+
+<p>该关键字与<strong>weak一样，也是弱参照，与</strong>weak的区别只是是否执行nil赋值(Zeroing)。但是这样，需要注意变量所指的对象已经被释放了，地址还还存在，但内存中对象已经没有了。如果还是访问该对象，将引起「BAD_ACCESS」错误。</p>
+
+<h6>__autoreleasing</h6>
+
+<p>该关键字使对像延迟释放。比如你想传一个未初始化的对像引用到一个方法当中，在此方法中实例化此对像，那么这种情况可以使用__autoreleasing。他被经常用于函数有值参数返回时的处理，比如下面的例子。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="nf">generateErrorInVariable:</span><span class="p">(</span><span class="n">__autoreleasing</span> <span class="n">NSError</span> <span class="o">**</span><span class="p">)</span><span class="nv">paramError</span> <span class="p">{</span>
+</span><span class='line'>   <span class="p">....</span>
+</span><span class='line'>      <span class="o">*</span><span class="n">paramError</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSError</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithDomain:</span><span class="s">@&quot;MyApp&quot;</span> <span class="nl">code:</span><span class="mi">1</span> <span class="nl">userInfo:</span><span class="n">errorDictionary</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">....</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>      <span class="n">NSError</span> <span class="o">*</span><span class="n">error</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'>      <span class="p">[</span><span class="n">self</span> <span class="nl">generateErrorInVariable:</span><span class="o">&amp;</span><span class="n">error</span><span class="p">];</span>
+</span><span class='line'>      <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;Error = %@&quot;</span><span class="p">,</span> <span class="n">error</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>又如函数的返回值是在函数中申请的，那么希望释放是在调用端时，往往有下面的代码。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span><span class="p">(</span><span class="n">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nf">stringTest</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>      <span class="n">NSString</span> <span class="o">*</span><span class="n">retStr</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSString</span> <span class="nl">stringWithString:</span><span class="s">@&quot;test&quot;</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">return</span> <span class="p">[[</span><span class="n">retStr</span> <span class="n">retain</span><span class="p">]</span> <span class="n">autorelease</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 使用ARC</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">-</span><span class="p">(</span><span class="n">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nf">stringTest</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>      <span class="n">__autoreleasing</span> <span class="n">NSString</span> <span class="o">*</span><span class="n">retStr</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSString</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithString:</span><span class="s">@&quot;test&quot;</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">return</span> <span class="n">retStr</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>即当方法的参数是id*，且希望方法返回时对象被autoreleased，那么使用该关键字。</p>
+
+<h3>概括</h3>
+
+<p>基本的ARC使用规则</p>
+
+<ul>
+<li>代码中不能使用retain, release, retain, autorelease</li>
+<li>不重载dealloc（如果是释放对象内存以外的处理，是可以重载该函数的，但是不能调用[super dealloc]）</li>
+<li>不能使用NSAllocateObject, NSDeallocateObject</li>
+<li>不能在C结构体中使用对象指针</li>
+<li>id与void *间的如果cast时需要用特定的方法（__bridge关键字）</li>
+<li>不能使用NSAutoReleasePool、而需要@autoreleasepool块</li>
+<li>不能使用“new”开始的属性名称 （如果使用会有下面的编译错误”Property’s synthesized getter follows Cocoa naming convention for returning ‘owned’ objects”）</li>
+</ul>
+
+
+<hr />
+
+<h1><span id="2">ARC之@property使用</span></h1>
+
+<h3>所有者属性</h3>
+
+<p>我们先来看看与所有权有关系的属性，关键字间的对应关系。</p>
+
+<table border="1">
+    <tr>
+        <td>属性值</td><td>关键字</td><td>所有权</td>
+    </tr>
+    <tr>
+        <td>strong</td><td> __strong</td><td>有</td>
+    </tr>
+    <tr>
+        <td>weak</td><td>__weak</td><td>无</td>
+    </tr>
+    <tr>
+        <td>unsafe_unretained</td><td>__unsafe_unretained</td><td>无</td>
+    </tr>
+    <tr>
+        <td>copy</td><td>__strong</td><td>有</td>
+    </tr>
+    <tr>
+        <td>assign</td><td>__unsafe_unretained</td><td>无</td>
+    </tr>
+    <tr>
+        <td>retain</td><td> __strong</td><td>有</td>
+    <tr>
+</table>
+
+
+<h6>strong</h6>
+
+<p>该属性值对应 __strong 关键字，即该属性所声明的变量将成为对象的持有者。</p>
+
+<h6>weak</h6>
+
+<p>该属性对应 __weak 关键字，与 __weak 定义的变量一致，该属性所声明的变量将没有对象的所有权，并且当对象被释放之后，对象将被自动赋值nil。</p>
+
+<p>并且，delegate 和 Outlet 应该用 weak 属性来声明。同时，如上一回介绍的 iOS 5 之前的版本是没有 __weak 关键字的，所以 weak 属性是不能使用的。这种情况我们使用 unsafe_unretained。</p>
+
+<h6>unsafe_unretained</h6>
+
+<p>等效于__unsafe_unretaind关键字声明的变量；像上面说明的，iOS 5之前的系统用该属性代替 weak 来使用。</p>
+
+<h6>copy</h6>
+
+<p>与 strong 的区别是声明变量是拷贝对象的持有者。</p>
+
+<h6>assign</h6>
+
+<p>一般Scalar Varible用该属性声明，比如,int, BOOL。</p>
+
+<h6>retain</h6>
+
+<p>该属性与 strong 一致；只是可读性更强一些。</p>
+
+<h3>读写相关的属性 (readwrite, readonly)</h3>
+
+<p>读写相关的属性有 readwrite 和 readonly 两种，如果使用ARC之后，那么需要注意一下 readonly 属性的使用。</p>
+
+<p>比如下面的变量声明。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">readonly</span><span class="p">)</span> <span class="n">NSString</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>一般声明为 readonly 的变量按理说应该不需要持有所有权了，但是在ARC有效的情况下，将出现下面的错误信息 ：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">“</span><span class="n">ARC</span> <span class="n">forbids</span> <span class="n">synthesizing</span> <span class="n">a</span> <span class="n">property</span> <span class="n">of</span> <span class="n">an</span> <span class="n">Objective</span><span class="o">-</span><span class="n">C</span> <span class="n">object</span> <span class="n">with</span> <span class="n">unspecified</span> <span class="n">ownership</span> <span class="n">or</span> <span class="n">storage</span> <span class="n">attribute</span><span class="err">”</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果定义了ARC有效，那么必须要有所有者属性的定义；所以我们的代码改成这样，就OK了</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">strong</span><span class="p">,</span> <span class="n">readonly</span><span class="p">)</span> <span class="n">NSString</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>不过有一点，Scalar Varible的变量缺省都有 assign 的属性定义，所以不需要给他们单独的明示声明了。</p>
+
+<hr />
+
+<h1><span id="3">ARC产生缘由</span></h1>
+
+<h3>Objective-C 内存管理</h3>
+
+<p>和许多面向对象语言一样，Objective-C 中内存管理的方式其实就是指 引用计数 （Reference Counting）的使用准则。如下图所示，对象生成的时候必定被某个持有者拿着，如果有多个持有者的话，其引用计数就会递增；相反失去一个持有者那么引用计数即会递减，直到失去所有的持有者，才真正地从内测中释放自己</p>
+
+<p><img src="/images/arc/ARC1.png"></p>
+
+<h3>基本原则</h3>
+
+<p>内存管理的依循下面的基本原则</p>
+
+<ul>
+<li>自己生成的对象，那么既是其持有者</li>
+<li>不是自己生成的对象，也可成为其持有者（一个对象可以被多个人持有）</li>
+<li>如果不想持有对象的时候，必须释放其所有权</li>
+<li>不能释放已不再持有所有权的对象</li>
+</ul>
+
+
+<p>结合 Objective-C 语言中的方法，我们来看看基本的内存管理。</p>
+
+<table border="1">
+<thead>
+    <tr>
+        <th>方法</th>
+        <th>动作</th>
+    </tr>
+</thead>
+<tbody>
+    <tr>
+        <td>alloc/new/copy/mutableCopy</td>
+        <td>生成对象并拥有所有权</td>
+    </tr>
+    <tr>
+        <td>retain</td>
+        <td>拥有对象所有权</td>
+    </tr>
+    <tr>
+        <td>release</td>
+        <td>释放对象所有权</td>
+    </tr>
+    <tr>
+        <td>dealloc</td>
+        <td>释放对象资源</td>
+    </tr>
+</tbody>
+</table>
+
+
+<p>Objective-C 语言内部严格遵守上面表格中的定义；首先是 alloc/new/copy/mutableCopy 这几个函数，并且是alloc/new/copy/mutableCopy 开头的函数，比如：allpcMyObject/newTheObject/copyThis/mutableCopyTheObject 等都必须遵循这个原则。</p>
+
+<p>反而言之，如果不是 alloc/new/copy/mutableCopy 开头的函数，而且要返回对象的话，那么调用端只是生成对象，而不是其持有者。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nf">allocObject</span> <span class="p">{</span>
+</span><span class='line'>      <span class="cm">/*</span>
+</span><span class='line'><span class="cm">     * 生成对象并拥有所有权</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>      <span class="kt">id</span> <span class="n">obj</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="cm">/*</span>
+</span><span class='line'><span class="cm">     * 自己一直是持有对象状态</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">obj</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如上面的例子，alloc 生成的对象，其所有权会传递给函数的调用端；即满足了 alloc 开头函数的命名规则。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nf">object</span> <span class="p">{</span>
+</span><span class='line'>      <span class="kt">id</span> <span class="n">obj</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="cm">/*</span>
+</span><span class='line'><span class="cm">     * 自己一直是持有对象状态</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="p">[</span><span class="n">obj</span> <span class="n">autorelease</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="cm">/*</span>
+</span><span class='line'><span class="cm">     * 对象还存在，只是并不持有它的所有权</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">return</span> <span class="n">obj</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这里我们用到了 autorelease 函数。它的作用既是将对象放入 NSAutoreleasePool 中，由其来维护其生命周期。换句话说对象的持有者是 NSAutoreleasePool；上面的例子中，object 返回后，调用者将不持有其所有权。（除非再调用 retain。）</p>
+
+<p>用 autorelease 的一个理由既是让程序员来控制对象的存活周期，而不像 C/C++ 等语言中，出栈后，栈中数据都被自动废弃，或者用 { } 框住的自动变量，当出了范围就看不到了。在 Objective-C 中，只有当 [pool drain] 被调用的时候，才清空 pool 中所有登录的对象实体，在这之前，你可以像往常一样正常使用对象。</p>
+
+<p>当然可以想象得到的，如果一个程序只有一个 NSAutoreleasePool，并在 main 中声明，程序结束时才 [pool drain]/[pool release] 的话，那么所有 autorelease 的对象都将塞满这个 pool，会耗掉系统大部分内存。所以，使用 NSAutoreleasePool 的时候也尽量建议局部使用。</p>
+
+<h3>MRC编程准则</h3>
+
+<p>基于以上原则，在 ARC 诞生之前，我们往往用下面准则来写代码。</p>
+
+<ul>
+<li><h4>生成对象时，使用autorelease</h4></li>
+</ul>
+
+
+<p>一般情况下，我们这样生成对象并使用</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">MyController</span><span class="o">*</span> <span class="n">controller</span> <span class="o">=</span> <span class="p">[[</span><span class="n">MyController</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'><span class="c1">// ......</span>
+</span><span class='line'><span class="p">[</span><span class="n">controller</span> <span class="n">release</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果在 [controller release] 之前函数return了怎么样，内存泄露了不是；为了防患于未然，一般像下面一样 生成对象时，使用autorelease。这样一来，该对象就被自动加入到最近的那个 pool 中。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">MyController</span><span class="o">*</span> <span class="n">controller</span> <span class="o">=</span> <span class="p">[[[</span><span class="n">MyController</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">]</span> <span class="n">autorelease</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li><h4>对象赋值时，先autorelease后再retain</h4></li>
+</ul>
+
+
+<p>对象赋值的时候，如果之前不将变量所持有的对象释放，那么很可能引起内存泄露。比如下面的代码</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">{</span>
+</span><span class='line'>      <span class="n">_member</span> <span class="o">=</span> <span class="p">[[</span><span class="n">TempValue</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">setValue:</span><span class="p">(</span><span class="n">TempValue</span> <span class="o">*</span><span class="p">)</span><span class="n">value</span> <span class="p">{</span>
+</span><span class='line'>  <span class="n">_member</span> <span class="o">=</span> <span class="n">value</span><span class="p">;</span>
+</span><span class='line'>  <span class="c1">// 这时，之前持有的对象因为没有 release 而引起内存泄露</span>
+</span><span class='line'>  <span class="c1">// 当然，先 [_member release] 后再代入也是可以的，</span>
+</span><span class='line'>  <span class="c1">// 但是当与「对象在函数中返回时」的问题一同考虑时，</span>
+</span><span class='line'>  <span class="c1">// 如果没有 return [[object retain] autorelease] 的保证，这里即使 [_member release]也是百搭</span>
+</span><span class='line'>  <span class="c1">// 详细的解释见下</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>鉴于以上原因，我们将原先的对象先autorelease后再将新对象retain赋值。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="n">_member</span> <span class="o">=</span> <span class="p">[[</span><span class="n">TempValue</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>  <span class="c1">// 这里，即使使用【生成对象时，使用autorelease】的准则，也没有关系</span>
+</span><span class='line'>  <span class="c1">// 使用autorelease一次就将制定对象放入pool中，放几次[pool drain]的时候就释放几次</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">setValue:</span><span class="p">(</span><span class="n">TempValue</span> <span class="o">*</span><span class="p">)</span><span class="n">value</span> <span class="p">{</span>
+</span><span class='line'>  <span class="p">[</span><span class="n">_member</span> <span class="n">autorelease</span><span class="p">];</span>
+</span><span class='line'>  <span class="n">_member</span> <span class="o">=</span> <span class="p">[</span><span class="n">value</span> <span class="n">retain</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>该原则遵循 Failed Self 的原则，虽然从性能上看有所损耗但是保证了代码</p>
+
+<ul>
+<li><h4>对象在函数中返回时，使用return [[object retain] autorelease]</h4></li>
+</ul>
+
+
+<p>严格地说，是除 alloc/new/copy/mutableCopy 开头函数以外的函数中，有对象放回时，使用return [[object retain] autorelease]。</p>
+
+<p><strong>我们结合下面的例子来说明，并总结出该问题的几种解决方案</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@implementation</span> <span class="nc">FooClass</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setObject:</span><span class="p">(</span><span class="n">MyObject</span> <span class="o">*</span><span class="p">)</span><span class="nv">object</span><span class="p">;</span>
+</span><span class='line'> <span class="p">{</span>
+</span><span class='line'>     <span class="c1">// 这里故意没有使用 autorelease，以便说明问题</span>
+</span><span class='line'>     <span class="p">[</span><span class="n">_object</span> <span class="n">release</span><span class="p">];</span>
+</span><span class='line'>     <span class="n">_object</span> <span class="o">=</span> <span class="p">[</span><span class="n">object</span> <span class="n">retain</span><span class="p">];</span>
+</span><span class='line'> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">-</span> <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="n">object</span><span class="p">;</span>
+</span><span class='line'> <span class="p">{</span>
+</span><span class='line'>     <span class="k">return</span> <span class="n">_object</span><span class="p">;</span>
+</span><span class='line'> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">dealloc</span><span class="p">;</span>
+</span><span class='line'> <span class="p">{</span>
+</span><span class='line'>     <span class="p">[</span><span class="n">_object</span> <span class="n">release</span><span class="p">];</span>
+</span><span class='line'>     <span class="p">[</span><span class="n">super</span> <span class="n">dealloc</span><span class="p">];</span>
+</span><span class='line'> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@implementation</span> <span class="nc">BarClass</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">doStuff</span><span class="p">;</span>
+</span><span class='line'> <span class="p">{</span>
+</span><span class='line'>    <span class="n">FooClass</span> <span class="o">*</span> <span class="n">foo</span> <span class="o">=</span> <span class="p">[[</span><span class="n">FooClass</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 创建第一个对象，引用计数 = 1</span>
+</span><span class='line'>    <span class="n">MyObject</span> <span class="o">*</span> <span class="n">firstObject</span> <span class="o">=</span> <span class="p">[[</span><span class="n">MyObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>    <span class="c1">// setObject中由于 [object retain] ，引用计数 = 2</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">foo</span> <span class="nl">setObject:</span><span class="n">firstObject</span><span class="p">];</span>
+</span><span class='line'>    <span class="c1">// 释放一次，引用计数 = 1；这之后对象有正确的所有权属性</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">firstObject</span> <span class="n">release</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 通过非 alloc/new/copy/mutableCopy 开头函数得到对象</span>
+</span><span class='line'>    <span class="c1">// anObject 指向第一个对象，但是并没有其所有权，对象引用计数 = 1</span>
+</span><span class='line'>    <span class="n">MyObject</span> <span class="o">*</span> <span class="n">anObject</span> <span class="o">=</span> <span class="p">[</span><span class="n">foo</span> <span class="n">object</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">anObject</span> <span class="n">testMethod</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 创建第二个对象</span>
+</span><span class='line'>    <span class="n">MyObject</span> <span class="o">*</span> <span class="n">secondObject</span> <span class="o">=</span> <span class="p">[[</span><span class="n">MyObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>    <span class="c1">// setObject中由于 [_object release]; 第一个对象引用计数 = 0，内存被释放</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">foo</span> <span class="nl">setObject:</span><span class="n">secondObject</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">secondObject</span> <span class="n">release</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 程序在这里崩溃了，因为 anObject 指向了一个空地址</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">anObject</span> <span class="n">testMethod</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li><h4>生成对象时，使用autorelease</h4></li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@implementation</span> <span class="nc">BarClass</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">doStuff</span><span class="p">;</span>
+</span><span class='line'> <span class="p">{</span>
+</span><span class='line'>    <span class="n">FooClass</span> <span class="o">*</span> <span class="n">foo</span> <span class="o">=</span> <span class="p">[[</span><span class="n">FooClass</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">MyObject</span> <span class="o">*</span> <span class="n">firstObject</span> <span class="o">=</span> <span class="p">[[[</span><span class="n">MyObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">]</span> <span class="n">autorelease</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">foo</span> <span class="nl">setObject:</span><span class="n">firstObject</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">MyObject</span> <span class="o">*</span> <span class="n">anObject</span> <span class="o">=</span> <span class="p">[</span><span class="n">foo</span> <span class="n">object</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">anObject</span> <span class="n">testMethod</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">MyObject</span> <span class="o">*</span> <span class="n">secondObject</span> <span class="o">=</span> <span class="p">[[[</span><span class="n">MyObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">]</span> <span class="n">autorelease</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">foo</span> <span class="nl">setObject:</span><span class="n">secondObject</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">[</span><span class="n">anObject</span> <span class="n">testMethod</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>对象生成时，即被放入最近的 pool 中，不需要人为特殊的维护，对象的生命周期将被延续，出 {} 范围之时即对象释放之际。</p>
+
+<ul>
+<li><h4>对象代入时，先autorelease后再retain</h4></li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setObject:</span><span class="p">(</span><span class="n">MyObject</span> <span class="o">*</span><span class="p">)</span><span class="nv">object</span><span class="p">;</span>
+</span><span class='line'> <span class="p">{</span>
+</span><span class='line'>     <span class="p">[</span><span class="n">_object</span> <span class="n">autorelease</span><span class="p">];</span>
+</span><span class='line'>     <span class="n">_object</span> <span class="o">=</span> <span class="p">[</span><span class="n">object</span> <span class="n">retain</span><span class="p">];</span>
+</span><span class='line'> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">-</span> <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="n">object</span><span class="p">;</span>
+</span><span class='line'> <span class="p">{</span>
+</span><span class='line'>     <span class="c1">// 遵循非 alloc/new/copy/mutableCopy 开头的函数，不赐予所有权原则</span>
+</span><span class='line'>     <span class="k">return</span> <span class="n">_object</span><span class="p">;</span>
+</span><span class='line'> <span class="p">}</span>
+</span><span class='line'> <span class="err">```</span>
+</span><span class='line'>  
+</span><span class='line'><span class="err">同样的，对象被放入最近的</span> <span class="n">pool</span> <span class="err">中，第二次</span> <span class="n">setObject</span> <span class="err">后对象引用计数仍为</span><span class="mi">1</span><span class="err">，</span> <span class="n">pool</span> <span class="err">清空时才执行最后一次对象</span><span class="n">release</span><span class="err">，从而保证了代码的正确性。</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">*</span> <span class="err">####对象在函数中返回时，使用</span><span class="k">return</span> <span class="p">[[</span><span class="n">object</span> <span class="n">retain</span><span class="p">]</span> <span class="n">autorelease</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p> objc
+&ndash; (void)setObject:(MyObject *)object;
+ {</p>
+
+<pre><code> [_object release];
+ _object = [object retain];
+</code></pre>
+
+<p> }</p>
+
+<ul>
+<li>(id)object;
+{
+   // 遵循非 alloc/new/copy/mutableCopy 开头的函数，不赐予所有权原则
+   return [[_object retain] autorelease];
+}
+&#8220;`</li>
+</ul>
+
+
+<p>好不容易回到了本小节要说明的方法；可以看到这是从另一个角度解决了该问题：[foo object] 的时候保证引用计数是2，并将对象放入pool中维护。</p>
+
+<h3>ARC编程准则</h3>
+
+<p>在ARC中，如果不是 alloc/new/copy/mutableCopy 开头的函数，编译器会将生成的对象自动放入 autoReleasePool 中。如果是 __strong 修饰的变量，编译器会自动给其加上所有权。等等，详细，我们根据不同的关键字来看看编译器为我们具体做了什么。并从中总结出 ARC 的使用规则。</p>
+
+<ul>
+<li><h4>__strong</h4></li>
+</ul>
+
+
+<p>先来看看用 __strong 修饰的变量，以及缺省隐藏的 __strong 情况。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="cm">/*</span>
+</span><span class='line'><span class="cm">     * 生成对象并拥有所有权</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kt">id</span> <span class="n">__strong</span> <span class="n">obj</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/*</span>
+</span><span class='line'><span class="cm">     * 自己一直是持有对象状态</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>    <span class="cm">/*</span>
+</span><span class='line'><span class="cm">     * 变量出生命周期时，失去全部所有者，对象内存空间被释放</span>
+</span><span class='line'><span class="cm">     */</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这种情况毫无悬念，缺省使用 alloc/new/copy/mutableCopy 开头的函数也是这样的结果。并且在这里，编译器帮我们自动的调用了对象的 release 函数，不需要手工维护。再看看下面的情况。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="cm">/*</span>
+</span><span class='line'><span class="cm">     * 生成对象但是并没有其所有权</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kt">id</span> <span class="n">__strong</span> <span class="n">obj</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSMutableArray</span> <span class="n">array</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/*</span>
+</span><span class='line'><span class="cm">     * 由于变量声明是强引用，自己一直是持有对象状态</span>
+</span><span class='line'><span class="cm">     * 编译器根据函数名，再将该对象放入 autoreleasepool 中</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>    <span class="cm">/*</span>
+</span><span class='line'><span class="cm">     * 变量出生命周期时，失去全部所有者，对象内存空间被释放</span>
+</span><span class='line'><span class="cm">     */</span>   
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>由上，虽然不是用 alloc/new/copy/mutableCopy 开头的函数得到的对象，由于是强参照，我们仍然成为对象的持有者。而这，正是编译器帮我们做到的。</p>
+
+<pre><code>具体做的是什么呢？其实就是【对象在函数中返回时，使用return [[object retain] autorelease]】所描述的；如果你反汇编一下ARC生成的代码，可以看到这时会自动调用名为 objc_retainAutoreleaseReturnValue 的函数，而其作用和 [[object retain] autorelease] 一致。编译器通过函数名分析，如果不是 alloc/new/copy/mutableCopy 开头的函数，自动加入了这段代码。    
+</code></pre>
+
+<p>另外，缺省 __strong 修饰的变量，对象代入的时候也正确地保证对象所有者规则；代入新对象时，自动释放旧对象的参照，代入nil的时候，表示释放当前对象的强参照。</p>
+
+<ul>
+<li><h4>__weak</h4></li>
+</ul>
+
+
+<p>虽然大部分场合，大部分问题使用 _<em>strong 来编码就足够了；但是为了解决循环参照的问题 _</em>weak 关键字修饰【弱参照】变量就发挥了左右。关于循环参照的问题，准备在以后的博文中介绍；今天，主要看看编译器在背后怎么处理 __weak 变量的。</p>
+
+<p>__weak 声明的变量其实是被放入一个weak表中，该表和引用计数的表格类似，是一个Hash表，都是以对象的内存地址做key，同时，针对一个对象地址的key，可以同时对应多个变量的地址。</p>
+
+<p><strong>当一个 __weak 所指对象被释放时，系统按下面步骤来处理</strong></p>
+
+<ul>
+<li>从weak表中，通过对象地址（key）找到entry</li>
+<li>将entry中所有指向该对象的变量设为nil</li>
+<li>从weak表中删除该entry</li>
+<li>从对象引用计数表中删除对象entry(通过通过对象地址找到)</li>
+</ul>
+
+
+<p>另外，当使用 __weak 修饰的变量的时候，变量将放入 autoreleasepool 中，并且用几次放几次。比如下面的简单例子。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">id</span> <span class="n">__weak</span> <span class="n">o</span> <span class="o">=</span> <span class="n">obj</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;1 %@&quot;</span><span class="p">,</span> <span class="n">o</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;2 %@&quot;</span><span class="p">,</span> <span class="n">o</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;3 %@&quot;</span><span class="p">,</span> <span class="n">o</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;4 %@&quot;</span><span class="p">,</span> <span class="n">o</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;5 %@&quot;</span><span class="p">,</span> <span class="n">o</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这里我们用了5次，那么pool中就被登录了5次；从效率上考虑这样当然不是很好，可以通过代入 __strong 修饰的强参照变量来避开这个问题。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">id</span> <span class="n">__weak</span> <span class="n">o</span> <span class="o">=</span> <span class="n">obj</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">id</span> <span class="n">temp</span> <span class="o">=</span> <span class="n">o</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;1 %@&quot;</span><span class="p">,</span> <span class="n">temp</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;2 %@&quot;</span><span class="p">,</span> <span class="n">temp</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;3 %@&quot;</span><span class="p">,</span> <span class="n">temp</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;4 %@&quot;</span><span class="p">,</span> <span class="n">temp</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;5 %@&quot;</span><span class="p">,</span> <span class="n">temp</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>另外，还有通过重载 allowsWeakReference/retainWeakReference 函数来限制 __weak 声明变量使用回数的方法，毕竟不在本次讨论范畴之内，就此省略。</p>
+
+<p>话说回来，为什么使用弱参照变量的时候，要将其放入 autoreleasepool 中呢？想想弱参照的定义就应该明白了 —- 如果在访问弱参照对象时，该对象被释放了怎么办，程序不就崩溃了嘛；所以为了解决该问题，又再一次用到了 pool。</p>
+
+<ul>
+<li><h5>__autoreleasing</h5></li>
+</ul>
+
+
+<p>虽然上面还没有讲到该关键字，但是编译器在很多时候已经用到了 autoreleasepool。比如非 alloc/new/copy/mutableCopy 开头的函数返回一个对象的时候，又比如使用一个 __weak 声明的变量的时候。</p>
+
+<p>实际上，写ARC代码的时候，明示 __autoreleasing 声明变量和明示 __strong 声明变量一样基本上没有，因为编译器已经为我们做了很多，很智能了（前提是我们要按ARC的规则写代码）。</p>
+
+<p>还有一种编译器缺省使用 __autoreleasing 关键字声明变量的时候：对象指针类型。比如下面的对应关系。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">id</span> <span class="o">*</span><span class="n">obj</span> <span class="o">==</span> <span class="kt">id</span> <span class="n">__autoreleasing</span> <span class="o">*</span><span class="n">obj</span>
+</span><span class='line'>      <span class="n">NSObject</span> <span class="o">**</span><span class="n">obj</span> <span class="o">==</span> <span class="n">NSObject</span> <span class="o">*</span> <span class="n">__autoreleasing</span> <span class="o">*</span><span class="n">obj</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>所以，下面两个函数的是等价的。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">performOperationWithError:</span><span class="p">(</span><span class="n">NSError</span> <span class="o">**</span><span class="p">)</span><span class="nv">error</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">-</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">performOperationWithError:</span><span class="p">(</span><span class="n">NSError</span> <span class="o">*</span> <span class="n">__autoreleasing</span> <span class="o">*</span><span class="p">)</span><span class="nv">error</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>像下面的函数调用，为什么是可行的呢？</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">NSError</span> <span class="n">__strong</span> <span class="o">*</span><span class="n">error</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'><span class="kt">BOOL</span> <span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="n">obj</span> <span class="nl">performOperationWithError:</span><span class="o">&amp;</span><span class="n">error</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其实，编译器是这样解释这段代码的</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">NSError</span> <span class="n">__strong</span> <span class="o">*</span><span class="n">error</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'><span class="n">NSError</span> <span class="n">__autoreleasing</span> <span class="o">*</span><span class="n">tmp</span> <span class="o">=</span> <span class="n">error</span><span class="p">;</span>
+</span><span class='line'><span class="kt">BOOL</span> <span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="n">obj</span> <span class="nl">performOperationWithError:</span><span class="o">&amp;</span><span class="n">tmp</span><span class="p">];</span>
+</span><span class='line'><span class="n">error</span> <span class="o">=</span> <span class="n">tmp</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>那么我们这样声明函数不就可以了吗？</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">performOperationWithError:</span><span class="p">(</span><span class="n">NSError</span> <span class="o">*</span> <span class="n">__strong</span> <span class="o">*</span><span class="p">)</span><span class="nv">error</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>答案是肯定的，你可以这样做，编译是可以通过，但你违反了非 alloc/new/copy/mutableCopy 开头的函数，不返回对象持有权的原则。这里是没有问题了，但也许影响到其他地方NG。</p>
+
+<h3>ARC 规则</h3>
+
+<p><strong>结合上面的讲解，我想你也应该能够总结出来使用ARC时的规则</strong>
+（这里只列出本讲中涉及的内容，其他的内容以后总结）</p>
+
+<ul>
+<li>代码中不能使用retain, release, retain, autorelease</li>
+<li>不能使用NSAllocateObject, NSDeallocateObject</li>
+<li>不能使用NSAutoReleasePool、而需要@autoreleasepool块</li>
+<li>严守内存管理相关函数命名规则</li>
+</ul>
+
+
+<p>关于函数命名，伴随ARC的导入，还有一系列函数的定义也被严格定义了，那就是以 init 开头的函数。init 函数作为alloc生成对象的初期化函数，需要按原样直接传递对象给调用段，所以下面的声明是OK的。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nf">initWithObject:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">obj</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>而下面的是NG的。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">initWithObject</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<hr />
+
+<h1><span id="4">ARC之循环引用</span></h1>
+
+<h3>概念</h3>
+
+<p>当我们使用强参照（Strong reference）时，往往需要留意 <strong>循环参照</strong> 的问题。循环参照指的是两个对象被互相强参照，以至于任一对象都不能释放。</p>
+
+<p>一般情况下，当对象之间有“父子关系”时，强参照的情况发生的比较多。比如通讯薄对象AddrBook和每个通讯录Entry的关系如下。</p>
+
+<p><img src="/images/arc/arc_reference_cycle_1.png"></p>
+
+<p>这种情况下，由于Entry对象被AddrBook强参照，所以不能释放。另一方面，如果Entry被释放了，AddrBook对象的强参照也就没有了，其对象也应被释放。</p>
+
+<h3>解决方式</h3>
+
+<p>像上面的例子，当多个对象间有“父子关系”时，需要在一侧用“弱参照”来解决循环参照问题。一般情况下，“父亲”作为“孩子”的拥有者，对“孩子”是强参照，而“孩子”对父亲是弱参照。</p>
+
+<p><img src="/images/arc/arc_reference_cycle_2.png"></p>
+
+<p>如图所示，当强参照AddrBook对象的变量被释放的时候，AddrBook对象将被自动释放，同时将失去Entry成员对象的强参照。另外，当AddrBook对象被释放的时候，Entry对象中的AddrBook变量也将由Zeroing机制，自动带入nil。我们不需要担心释放对象的再访问问题。</p>
+
+<p>下面，我们将看看有几种情况下，需要注意循环参照问题。</p>
+
+<h3>Delegate模式</h3>
+
+<p>iOS程序中经常用到delegate模式，比如ViewController中，用ModalView打开/关闭DetailViewController时，需要delegate的设定。</p>
+
+<p><img src="/images/arc/arc_reference_cycle_3.png"></p>
+
+<p>这里，ViewController对象中强参照detailViewController，如果DetailViewController的delegate不是弱参照ViewController话，将引起循环参照。</p>
+
+<p>另外，当类中使用weak @property声明的delegate变量时，如果参照对象被释放，该变量将被自动设为nil，不需要程序代码设置。</p>
+
+<h3>Blocks</h3>
+
+<p>Blocks是iOS 4开始导入的，可以理解为python或者lisp中的Lambda，C++11也已导入了该概念；类似概念ruby/smalltalk/JSP语言中也有定义。具体讲解见以后的文章，本节我们主要看看在Block中的循环参照问题。</p>
+
+<p>比如，block对象用copy的属性定义时候，</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">typedef</span> <span class="nf">void</span><span class="p">(</span><span class="o">^</span><span class="n">MyBlock</span><span class="p">)(</span><span class="kt">void</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@interface</span> <span class="nc">MyObject</span> : <span class="nc">NSObject</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">copy</span><span class="p">)</span> <span class="n">MyBlock</span> <span class="n">block</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">strong</span><span class="p">)</span> <span class="n">NSString</span> <span class="o">*</span><span class="n">str</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">performBlock</span><span class="p">;</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@implementation</span> <span class="nc">MyObject</span>
+</span><span class='line'><span class="k">@synthesize</span> <span class="n">block</span><span class="p">,</span> <span class="n">str</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">performBlock</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">block</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">self</span><span class="p">.</span><span class="n">block</span><span class="p">();</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>调用端如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">MyObject</span> <span class="o">*</span><span class="n">object</span> <span class="o">=</span> <span class="p">[[</span><span class="n">MyObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'><span class="n">object</span><span class="p">.</span><span class="n">str</span> <span class="o">=</span> <span class="s">@&quot;hoge&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">object</span><span class="p">.</span><span class="n">block</span> <span class="o">=</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block: str=%@&quot;</span><span class="p">,</span> <span class="n">object</span><span class="p">.</span><span class="n">str</span><span class="p">);</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'><span class="p">[</span><span class="n">object</span> <span class="n">performBlock</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>我们看到，Block的构文中参照了object，同样object也强参照block。</p>
+
+<p><img src="/images/arc/arc_reference_cycle_4.png"></p>
+
+<p>为了解决该问题，我们可以有下面两种选择。</p>
+
+<h6>使用__block关键字修饰</h6>
+
+<p>使用__block关键字，让对象有读写权限，如果Block内的处理完毕就释放object。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">__block</span> <span class="n">MyObject</span> <span class="o">*</span><span class="n">object</span> <span class="o">=</span> <span class="p">[[</span><span class="n">MyObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'><span class="n">object</span><span class="p">.</span><span class="n">str</span> <span class="o">=</span> <span class="s">@&quot;hoge&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">object</span><span class="p">.</span><span class="n">block</span> <span class="o">=</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block: str=%@&quot;</span><span class="p">,</span> <span class="n">object</span><span class="p">.</span><span class="n">str</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">object</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'><span class="p">[</span><span class="n">object</span> <span class="n">performBlock</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>该关键字的意思就是让block取消对object的强参照，以避免循环参照。但是，有一个问题就是，object的释放动作是在Block内部执行，如果Block没有被执行的话，循环参照一直存在。比如上面的代码，如果第8行 [object performBlock]; 没有执行的话，那么一直还是循环参照状态。</p>
+
+<h6>使用__weak关键字修饰</h6>
+
+<p>另一种方案就是让Block的参照变为弱参照。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">MyObject</span> <span class="o">*</span><span class="n">object</span> <span class="o">=</span> <span class="p">[[</span><span class="n">MyObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'><span class="n">object</span><span class="p">.</span><span class="n">str</span> <span class="o">=</span> <span class="s">@&quot;hoge&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">__weak</span> <span class="n">MyObject</span> <span class="o">*</span><span class="n">weakObject</span> <span class="o">=</span> <span class="n">object</span><span class="p">;</span>
+</span><span class='line'><span class="n">object</span><span class="p">.</span><span class="n">block</span> <span class="o">=</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block: str=%@&quot;</span><span class="p">,</span> <span class="n">weakObject</span><span class="p">.</span><span class="n">str</span><span class="p">);</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'><span class="p">[</span><span class="n">object</span> <span class="n">performBlock</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>考虑到异步通信时Blocks的使用情况，weak变量weakObject有可能随时变为nil，所以类似于下面先变为strong变量，并检查是否为nil的处理方式应该更安全。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">MyObject</span> <span class="o">*</span><span class="n">object</span> <span class="o">=</span> <span class="p">[[</span><span class="n">MyObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'><span class="n">object</span><span class="p">.</span><span class="n">str</span> <span class="o">=</span> <span class="s">@&quot;hoge&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">__weak</span> <span class="n">MyObject</span> <span class="o">*</span><span class="n">weakObject</span> <span class="o">=</span> <span class="n">object</span><span class="p">;</span>
+</span><span class='line'><span class="n">object</span><span class="p">.</span><span class="n">block</span> <span class="o">=</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>    <span class="n">MyObject</span> <span class="n">strongObject</span> <span class="o">=</span> <span class="n">weakObject</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">strongObject</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block: str=%@&quot;</span><span class="p">,</span> <span class="n">strongObject</span><span class="p">.</span><span class="n">str</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'><span class="p">[</span><span class="n">object</span> <span class="n">performBlock</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>总上，当我们使用Blocks时，也需要考虑Block中变量和实例的关系，不要引起不必要的循环参照问题。</p>
+
+<hr />
+
+<h1><span id="5">ARC之Outlet与弱引用</span></h1>
+
+<h3>使用weak property声明Outlet</h3>
+
+<p>当我们使用 Interface Builder 生成Outlet对象的时候，一般都是作为 subview 来使用的。比如 UIViewController 的view。所以说Outlet的持有者就是superview对象，即有“父子”关系。我们知道，当对象间有“父子”关系时，需要使用弱参照，以避免“循环参照”。</p>
+
+<p>ViewController 本身是不会作为Outlet的所有者的，所以使用weak property声明。</p>
+
+<p><img src="/images/arc/arc_outlet_weak_property.png"></p>
+
+<h3>简化viewDidUnload</h3>
+
+<p>Outlet都使用weak property声明的时候，还有一个好处，就是简化viewDidUnload的处理。</p>
+
+<p>iOS在系统内存不足的时候，UIViewController会将没有表示的所有view做unload处理，即调用viewDidUnload接口。</p>
+
+<p>所以，如果是强参照的情况下，需要释放所有权，</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">strong</span><span class="p">)</span> <span class="kt">IBOutlet</span> <span class="n">UILabel</span> <span class="o">*</span><span class="n">label</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<br>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">viewDidUnload</span> <span class="p">{</span>
+</span><span class='line'>      <span class="n">self</span><span class="p">.</span><span class="n">label</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span> <span class="c1">// 取消强参照，释放所有权</span>
+</span><span class='line'>      <span class="p">[</span><span class="n">super</span> <span class="n">viewDidUnload</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果没有 self.label = nil 的处理，那么 UIViewController 将不会释放 label 的所有权；结果，系统是调用了unload，但是subview对象始终留在内存中。随着界面上控件的增多，内存泄露会越来越大。</p>
+
+<p>如果使用的是weak property声明的话，会是怎样的呢？</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">weak</span><span class="p">)</span> <span class="kt">IBOutlet</span> <span class="n">UILabel</span> <span class="o">*</span><span class="n">label</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这时，系统在unload时，由于label没有被强参照，更加ARC的规则，这时，label的对象即被释放。并在释放的同时，变量自动指向nil。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">viewDidUnload</span> <span class="p">{</span>
+</span><span class='line'>    <span class="c1">// 这里什么也不用管</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">super</span> <span class="n">viewDidUnload</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其实，如果我们的viewDidUnload只是用来释放Outlet用的话，那么该函数也可以不被重载的。</p>
+
+<h3>什么时候要用strong property</h3>
+
+<p>由上我们也可以看到，并不是所有的Outlet都用弱参照来声明都是正确的；当使用Interface Builder生成的第一层的view或者windows被作为Outlet来使用的话，那么是不能声明为弱参照property的。（比如，Storyboard的各个scene）</p>
+
+<p>理由很简单，没有被任何人强参照的对象，生成之后就会立刻被释放。</p>
+
+<p>综上，当我们使用Outlet的时候，注意不同的情况来使用strong或者是weak。</p>
+
+<hr />
+
+<h1><span id="6">ARC之对象转型</span></h1>
+
+<h3>引子</h3>
+
+<p>我们先来看一下ARC无效的时候，我们写id类型转void*类型的写法：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">id</span> <span class="n">obj</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="n">p</span> <span class="o">=</span> <span class="n">obj</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>反过来，当把void*对象变回id类型时，只是简单地如下来写，</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">id</span> <span class="n">obj</span> <span class="o">=</span> <span class="n">p</span><span class="p">;</span>
+</span><span class='line'><span class="p">[</span><span class="n">obj</span> <span class="n">release</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>但是上面的代码在ARC有效时，就有了下面的错误：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="nl">error:</span> <span class="n">implicit</span> <span class="n">conversion</span> <span class="n">of</span> <span class="n">an</span> <span class="n">Objective</span><span class="o">-</span><span class="n">C</span> <span class="n">pointer</span>
+</span><span class='line'>       <span class="n">to</span> <span class="err">’</span><span class="kt">void</span> <span class="o">*</span><span class="err">’</span> <span class="n">is</span> <span class="n">disallowed</span> <span class="n">with</span> <span class="n">ARC</span>
+</span><span class='line'>       <span class="kt">void</span> <span class="o">*</span><span class="n">p</span> <span class="o">=</span> <span class="n">obj</span><span class="p">;</span>
+</span><span class='line'>                 <span class="o">^</span>
+</span><span class='line'>
+</span><span class='line'><span class="nl">error:</span> <span class="n">implicit</span> <span class="n">conversion</span> <span class="n">of</span> <span class="n">a</span> <span class="n">non</span><span class="o">-</span><span class="n">Objective</span><span class="o">-</span><span class="n">C</span> <span class="n">pointer</span>
+</span><span class='line'>    <span class="n">type</span> <span class="err">’</span><span class="kt">void</span> <span class="o">*</span><span class="err">’</span> <span class="n">to</span> <span class="err">’</span><span class="kt">id</span><span class="err">’</span> <span class="n">is</span> <span class="n">disallowed</span> <span class="n">with</span> <span class="n">ARC</span>
+</span><span class='line'>    <span class="kt">id</span> <span class="n">o</span> <span class="o">=</span> <span class="n">p</span><span class="p">;</span>
+</span><span class='line'>            <span class="o">^</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>__bridge</h3>
+
+<p>为了解决这一问题，我们使用 __bridge 关键字来实现id类型与void*类型的相互转换。看下面的例子。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">id</span> <span class="n">obj</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="n">p</span> <span class="o">=</span> <span class="p">(</span><span class="n">__bridge</span> <span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">obj</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">id</span> <span class="n">o</span> <span class="o">=</span> <span class="p">(</span><span class="n">__bridge</span> <span class="kt">id</span><span class="p">)</span><span class="n">p</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>将Objective-C的对象类型用 <strong>bridge 转换为 void* 类型和使用 </strong>unsafe_unretained 关键字修饰的变量是一样的。被代入对象的所有者需要明确对象生命周期的管理，不要出现异常访问的问题。</p>
+
+<p>除过 <strong>bridge 以外，还有两个 </strong>bridge 相关的类型转换关键字：</p>
+
+<ul>
+<li>__bridge_retained</li>
+<li>__bridge_transfer</li>
+</ul>
+
+
+<p>接下来，我们将看看这两个关键字的区别。</p>
+
+<h3>__bridge_retained</h3>
+
+<p>先来看使用 __bridge_retained 关键字的例子程序：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">id</span> <span class="n">obj</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="n">p</span> <span class="o">=</span> <span class="p">(</span><span class="n">__bridge_retained</span> <span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">obj</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>从名字上我们应该能理解其意义：类型被转换时，其对象的所有权也将被变换后变量所持有。如果不是ARC代码，类似下面的实现：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">id</span> <span class="n">obj</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="n">p</span> <span class="o">=</span> <span class="n">obj</span><span class="p">;</span>
+</span><span class='line'><span class="p">[(</span><span class="kt">id</span><span class="p">)</span><span class="n">p</span> <span class="n">retain</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以用一个实际的例子验证，对象所有权是否被持有。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="n">p</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>      <span class="kt">id</span> <span class="n">obj</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>      <span class="n">p</span> <span class="o">=</span> <span class="p">(</span><span class="n">__bridge_retained</span> <span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">obj</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;class=%@&quot;</span><span class="p">,</span> <span class="p">[(</span><span class="n">__bridge</span> <span class="kt">id</span><span class="p">)</span><span class="n">p</span> <span class="n">class</span><span class="p">]);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>出了大括号的范围后，p 仍然指向一个有效的实体。说明他拥有该对象的所有权，该对象没有因为出其定义范围而被销毁。</p>
+
+<h3>__bridge_transfer</h3>
+
+<p>相反，当想把本来拥有对象所有权的变量，在类型转换后，让其释放原先所有权的时候，需要使用 __bridge_transfer 关键字。文字有点绕口，我们还是来看一段代码吧。</p>
+
+<p>如果ARC无效的时候，我们可能需要写下面的代码。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// p 变量原先持有对象的所有权</span>
+</span><span class='line'><span class="kt">id</span> <span class="n">obj</span> <span class="o">=</span> <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="n">p</span><span class="p">;</span>
+</span><span class='line'><span class="p">[</span><span class="n">obj</span> <span class="n">retain</span><span class="p">];</span>
+</span><span class='line'><span class="p">[(</span><span class="kt">id</span><span class="p">)</span><span class="n">p</span> <span class="n">release</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>那么ARC有效后，我们可以用下面的代码来替换：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// p 变量原先持有对象的所有权</span>
+</span><span class='line'><span class="kt">id</span> <span class="n">obj</span> <span class="o">=</span> <span class="p">(</span><span class="n">__bridge_transfer</span> <span class="kt">id</span><span class="p">)</span><span class="n">p</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以看出来，__bridge_retained 是编译器替我们做了 retain 操作，而 __bridge_transfer 是替我们做了 release。</p>
+
+<h3>Toll-Free bridged</h3>
+
+<p>在iOS世界，主要有两种对象：Objective-C 对象和 Core Foundation 对象。Core Foundation 对象主要是有C语言实现的 Core Foundation Framework 的对象，其中也有对象引用计数的概念，只是不是 Cocoa Framework::Foundation Framework 的 retain/release，而是自身的 CFRetain/CFRelease 接口。</p>
+
+<p>这两种对象间可以互相转换和操作，不使用ARC的时候，单纯的用C的类型转换，不需要消耗CPU的资源，所以叫做 Toll-Free bridged。比如 NSArray和CFArrayRef, NSString和CFStringRef，他们虽然属于不同的 Framework，但是具有相同的对象结构，所以可以用标准C的类型转换。</p>
+
+<p>比如不使用ARC时，我们用下面的代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">NSString</span> <span class="o">*</span><span class="n">string</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSString</span> <span class="nl">stringWithFormat:</span><span class="p">...];</span>
+</span><span class='line'><span class="n">CFStringRef</span> <span class="n">cfString</span> <span class="o">=</span> <span class="p">(</span><span class="n">CFStringRef</span><span class="p">)</span><span class="n">string</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>同样，Core Foundation类型向Objective-C类型转换时，也是简单地用标准C的类型转换即可。</p>
+
+<p>但是在ARC有效的情况下，将出现类似下面的编译错误：</p>
+
+<pre><code>Cast of Objective-C pointer type ‘NSString *’ to C pointer type ‘CFStringRef’ (aka ‘const struct __CFString *’) requires a bridged cast
+Use __bridge to convert directly (no change in ownership)
+Use __bridge_retained to make an ARC object available as a +1 ‘CFStringRef’ (aka ‘const struct __CFString *’)
+</code></pre>
+
+<p>错误中已经提示了我们需要怎样做：用 <strong>bridge 或者 </strong>bridge_retained 来转型，其差别就是变更对象的所有权。</p>
+
+<p>正因为Objective-C是ARC管理的对象，而Core Foundation不是ARC管理的对象，所以才要特意这样转换，这与id类型向void*转换是一个概念。也就是说，当这两种类型（有ARC管理，没有ARC管理）在转换时，需要告诉编译器怎样处理对象的所有权。</p>
+
+<p>上面的例子，使用 <strong>bridge/</strong>bridge_retained 后的代码如下：</p>
+
+<h6>__bridge</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">NSString</span> <span class="o">*</span><span class="n">string</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSString</span> <span class="nl">stringWithFormat:</span><span class="p">...];</span>
+</span><span class='line'><span class="n">CFStringRef</span> <span class="n">cfString</span> <span class="o">=</span> <span class="p">(</span><span class="n">__bridge</span> <span class="n">CFStringRef</span><span class="p">)</span><span class="n">string</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>只是单纯地执行了类型转换，没有进行所有权的转移，也就是说，当string对象被释放的时候，cfString也不能被使用了。</p>
+
+<h6>__bridge_retained</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">NSString</span> <span class="o">*</span><span class="n">string</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSString</span> <span class="nl">stringWithFormat:</span><span class="p">...];</span>
+</span><span class='line'><span class="n">CFStringRef</span> <span class="n">cfString</span> <span class="o">=</span> <span class="p">(</span><span class="n">__bridge_retained</span> <span class="n">CFStringRef</span><span class="p">)</span><span class="n">string</span><span class="p">;</span>
+</span><span class='line'><span class="p">...</span>
+</span><span class='line'><span class="n">CFRelease</span><span class="p">(</span><span class="n">cfString</span><span class="p">);</span> <span class="c1">// 由于Core Foundation的对象不属于ARC的管理范畴，所以需要自己release</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>使用 __bridge_retained 可以通过转换目标处（cfString）的 retain 处理，来使所有权转移。即使 string 变量被释放，cfString 还是可以使用具体的对象。只是有一点，由于Core Foundation的对象不属于ARC的管理范畴，所以需要自己release。</p>
+
+<p>实际上，Core Foundation 内部，为了实现Core Foundation对象类型与Objective-C对象类型的相互转换，提供了下面的函数。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">CFTypeRef</span>  <span class="nf">CFBridgingRetain</span><span class="p">(</span><span class="kt">id</span>  <span class="n">X</span><span class="p">)</span>  <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span>  <span class="p">(</span><span class="n">__bridge_retained</span>  <span class="n">CFTypeRef</span><span class="p">)</span><span class="n">X</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">id</span>  <span class="nf">CFBridgingRelease</span><span class="p">(</span><span class="n">CFTypeRef</span>  <span class="n">X</span><span class="p">)</span>  <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span>  <span class="p">(</span><span class="n">__bridge_transfer</span>  <span class="kt">id</span><span class="p">)</span><span class="n">X</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>所以，可以用 CFBridgingRetain 替代 __bridge_retained 关键字：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">NSString</span> <span class="o">*</span><span class="n">string</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSString</span> <span class="nl">stringWithFormat:</span><span class="p">...];</span>
+</span><span class='line'><span class="n">CFStringRef</span> <span class="n">cfString</span> <span class="o">=</span> <span class="n">CFBridgingRetain</span><span class="p">(</span><span class="n">string</span><span class="p">);</span>
+</span><span class='line'><span class="p">...</span>
+</span><span class='line'><span class="n">CFRelease</span><span class="p">(</span><span class="n">cfString</span><span class="p">);</span> <span class="c1">// 由于Core Foundation不在ARC管理范围内，所以需要主动release。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>__bridge_transfer</h6>
+
+<p>所有权被转移的同时，被转换变量将失去对象的所有权。当Core Foundation对象类型向Objective-C对象类型转换的时候，会经常用到 __bridge_transfer 关键字。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">CFStringRef</span> <span class="n">cfString</span> <span class="o">=</span> <span class="n">CFStringCreate</span><span class="p">...();</span>
+</span><span class='line'><span class="n">NSString</span> <span class="o">*</span><span class="n">string</span> <span class="o">=</span> <span class="p">(</span><span class="n">__bridge_transfer</span> <span class="n">NSString</span> <span class="o">*</span><span class="p">)</span><span class="n">cfString</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// CFRelease(cfString); 因为已经用 __bridge_transfer 转移了对象的所有权，所以不需要调用 release</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>同样，我们可以使用 CFBridgingRelease() 来代替 __bridge_transfer 关键字。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">CFStringRef</span> <span class="n">cfString</span> <span class="o">=</span> <span class="n">CFStringCreate</span><span class="p">...();</span>
+</span><span class='line'><span class="n">NSString</span> <span class="o">*</span><span class="n">string</span> <span class="o">=</span> <span class="n">CFBridgingRelease</span><span class="p">(</span><span class="n">cfString</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>总结</h3>
+
+<p>由上面的学习我们了解到 ARC 中类型转换的用法，那么我们实际使用中按照怎样的原则或者方法来区分使用呢，下面我总结了几点关键要素。</p>
+
+<ul>
+<li>明确被转换类型是否是 ARC 管理的对象</li>
+<li>Core Foundation 对象类型不在 ARC 管理范畴内</li>
+<li>Cocoa Framework::Foundation 对象类型（即一般使用到的Objectie-C对象类型）在 ARC 的管理范畴内</li>
+<li>如果不在 ARC 管理范畴内的对象，那么要清楚 release 的责任应该是谁</li>
+<li>各种对象的生命周期是怎样的</li>
+</ul>
+
+
+<p>1 . 声明 id obj 的时候，其实是缺省的申明了一个 __strong 修饰的变量，所以编译器自动地加入了 retain 的处理，所以说 __bridge_transfer 关键字只为我们做了 release 处理。</p>
+
+<hr />
+
+<h1><span id="7">最终归纳</span></h1>
+
+<h3>内存管理基本原则</h3>
+
+<p>内存管理依循下面的基本原则:</p>
+
+<ul>
+<li>自己生成的对象，那么即是其持有者</li>
+<li>不是自己生成的对象，也可成为其持有者（一个对象可以被多个人持有）</li>
+<li>如果不想持有对象的时候，必须释放其所有权</li>
+<li>不能释放已不再持有所有权的对象</li>
+</ul>
+
+
+<p><strong>不管ARC有没有效，该原则始终存在。</strong></p>
+
+<h3>所有权关键字</h3>
+
+<p>从代码上看，有ARC的代码和没有ARC的代码区别就在下面的几个关键字。</p>
+
+<p>类似 NSObject* 的对象类型，或者 id 类型(<a href="http://www.yifeiyang.net/iphone-development-introduction-7-from-the-c-c-language-to-objective-c-language/">关于Objective-C对象的解释，可以参考iPhone开发入门（7）— 从C/C++语言到Objective-C语言</a>)，当ARC有效的时候，根据具体情况，这些关键字必须要使用(当然，如果你不写，编译器会用缺省的值代替)。</p>
+
+<ul>
+<li>__strong</li>
+<li>__weak</li>
+<li>__unsafe_unretained</li>
+<li>__autoreleasing</li>
+</ul>
+
+
+<p>__strong是默认的修饰符。</p>
+
+<p>__weak修饰了一个自动nil的weak引用。</p>
+
+<p>__unsafe_unretained声明了一个不会自动nil的weak引用。当变量被释放，那么它就变成了一个野指针了。</p>
+
+<p>__autoreleasing 用来修饰一个声明为 (id *) 的函数的参数，当函数返回值时被释放。</p>
+
+<h3>ARC使用准则</h3>
+
+<p>为了避免程序秒退的尴尬，使用ARC时，我们的代码必须遵循下面的准则。</p>
+
+<ul>
+<li>不能使用 retain/release/retainCount/autorelease</li>
+<li>不能使用 NSAllocateObject/NSDeallocateObject</li>
+<li>不能使用 NSZone</li>
+<li>不能明示调用dealloc</li>
+<li>内存管理相关的函数必须遵循命名规则</li>
+<li>使用@autoreleasepool代替NSAutoreleasePool</li>
+<li>Objective-C 对象不能作为C语言结构体（struct/union）的成员</li>
+<li>【id】与【void*】之间需要明示cast</li>
+</ul>
+
+
+<p>建议使用Objective-C的class来管理数据格式，来代替C语言的struct。不能隐式转换 id 和 void *。</p>
+
+<p>让我们一个一个来分析</p>
+
+<ul>
+<li><h4>不能使用 retain/release/retainCount/autorelease</h4></li>
+</ul>
+
+
+<p>内存管理完全交给编译器去做，所以之前内存相关的函数(retain/release/retainCount/autorelease)不能出现在程序中。Apple的ARC文档中也有下面的说明。</p>
+
+<pre><code>ARC 有效后，不需要再次使用retain 和 release
+</code></pre>
+
+<p>如果我们在程序中使用这些函数，会得到类似下面的编译错误信息。</p>
+
+<pre><code>error: ARC forbids explicit message send of ’release’
+     [o release];
+      ^ ~~~~~~~
+</code></pre>
+
+<ul>
+<li><h4>不能使用 NSAllocateObject/NSDeallocateObject</h4></li>
+</ul>
+
+
+<p>生成并持有一个Objective-C对象的时候，往往像下面一样使用NSObject的alloc接口函数。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">id</span> <span class="n">obj</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSObject</span> <span class="n">alloc</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>实际上，如果我们看了GNUstep 中关于 alloc 的代码就会明白，实际他是使用 NSAllocateObject 来生成并持有对象实例的。换言之，ARC有效的时候，NSAllocateObject函数的调用也是禁止的。如果使用，也会遇到下面的编译错误。</p>
+
+<pre><code>error: ’NSAllocateObject’ is unavailable:
+    not available in automatic reference counting mode
+</code></pre>
+
+<p>同样，对象释放时使用的 NSDeallocateObject 函数也不能使用。</p>
+
+<ul>
+<li><h4>不能使用 NSZone</h4></li>
+</ul>
+
+
+<p>NSZone 是什么？NSZone 是为了防止内存碎片而导入的一项措施。Zone 是内存管理的基本单元，系统中管理复数的Zone。系统根据对象的使用目的，尺寸，分配其所属的Zone区域。以提高对象的访问效率，避免不必要的内存碎片。但是，现在的运行时系统（用编译开关 __OBJC2__ 指定的情况下）是不支持Zone概念的。所以，不管ARC是否有效，都不能使用 NSZone。</p>
+
+<ul>
+<li><h4>不能明示调用dealloc</h4></li>
+</ul>
+
+
+<p>不管是否使用ARC，当对象被释放的时候，对象的dealloc函数被调用（就像是C++中对象的析构函数）。在该函数中，需要做一些内存释放的动作。比如，当对象中使用了malloc分配的C语言内存空间，那么dealloc中就需要像下面一样处理内存的释放。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="nf">dealloc</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>      <span class="n">free</span><span class="p">(</span><span class="n">buffer_</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>又或者是注册的delegate对象，观察者对象需要被删除的时候，也是在dealloc函数中动作。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="nf">dealloc</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>      <span class="p">[[</span><span class="n">NSNotificationCenter</span> <span class="n">defaultCenter</span><span class="p">]</span> <span class="nl">removeObserver:</span><span class="n">self</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果在ARC无效的时候，我们还要像下面一样，调用父类对象的dealloc函数。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="nf">dealloc</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>      <span class="p">[</span><span class="n">super</span> <span class="n">dealloc</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>但是当ARC有效的时候，[super dealloc];的调用已经被编译器自动执行，已经不需要我们明示调用了。如果你在代码中还这样写，难免遇到下面的错误。</p>
+
+<pre><code>error: ARC forbids explicit message send of ’dealloc’
+     [super dealloc];
+      ^ ~~~~~~~
+</code></pre>
+
+<ul>
+<li><h4>内存管理相关的函数必须遵循命名规则</h4></li>
+</ul>
+
+
+<p>在前面，我们知道如果是 alloc/new/copy/mutableCopy/init 开头的函数，需要将对象所有权返回给调用端。这条规则不管ARC是否有效都应该被遵守。只是 init 开头的函数比较特殊，他只在ARC下有要求，而且异常苛刻。</p>
+
+<p>init 开始的函数只能返回id型，或者是该函数所属的类/父类的对象类型。基本上来说，init函数是针对alloc函数的返回值，做一些初始化处理，然后再将该对象返回。比如：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">id</span> <span class="n">obj</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSObject</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>再比如下面定义的函数就是不对的：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="nf">initThisObject</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>需要是下面这样：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">-</span> <span class="p">(</span><span class="kt">id</span><span class="p">)</span> <span class="nf">initWithObject:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">obj</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>另外，下面名为 initialize 的函数比较特殊，编译器将把它过滤掉，不按上面的规则处理。</p>
+
+<ul>
+<li><h4>使用@autoreleasepool代替NSAutoreleasePool</h4></li>
+</ul>
+
+
+<p>在ARC之下，已经不能在代码中使用 NSAutoreleasePool，我们之前写 main.m 文件的时候，往往像下面这样写。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
+</span><span class='line'>      <span class="n">NSAutoreleasePool</span> <span class="o">*</span> <span class="n">pool</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSAutoreleasePool</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>      <span class="kt">int</span> <span class="n">retVal</span> <span class="o">=</span> <span class="n">UIApplicationMain</span><span class="p">(</span><span class="n">argc</span><span class="p">,</span> <span class="n">argv</span><span class="p">,</span> <span class="nb">nil</span><span class="p">,</span> <span class="nb">nil</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">pool</span> <span class="n">release</span><span class="p">];</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">retVal</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>而当ARC有效后，我们需要用@autoreleasepool代替NSAutoreleasePool。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>      <span class="err">@</span><span class="n">autoreleasepool</span> <span class="p">{</span>
+</span><span class='line'>          <span class="k">return</span> <span class="n">UIApplicationMain</span><span class="p">(</span><span class="n">argc</span><span class="p">,</span> <span class="n">argv</span><span class="p">,</span> <span class="nb">nil</span><span class="p">,</span> <span class="n">NSStringFromClass</span><span class="p">([</span><span class="n">AppDelegate</span> <span class="n">class</span><span class="p">]));</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>当编译器看到 @autoreleasepool 定义的块后会自动生成 NSAutoreleasePool 对象，并将需要的对象放入 AutoReleasePool 中，当出方块的定义范围时，pool 中的对象将被释放。</p>
+
+<ul>
+<li><h4>Objective-C 对象不能作为C语言结构体（struct/union）的成员</h4></li>
+</ul>
+
+
+<p>当我们设置ARC有效，并在C语言的结构体中定义Objective-C的对象时，将出现类似下面的编译错误。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">Data</span> <span class="p">{</span>
+</span><span class='line'>      <span class="n">NSMutableArray</span> <span class="o">*</span><span class="n">array</span><span class="p">;</span>
+</span><span class='line'><span class="p">};</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<br>
+
+
+<pre><code>error: ARC forbids Objective-C objs in structs or unions
+     NSMutableArray *array;
+                     ^
+</code></pre>
+
+<p>由于 ARC 是将内存管理的细节委托给编译器来做，所以说编译器必须要管理对象的生命周期。而LLVM 3.0中不存在对单纯C语言构造体成员的内存管理方法。如果单纯是栈对象，利用进出栈原理，可以简单地维护对象的生命周期；而结构体是不行的，简单地理解，结构体没有析构函数，编译器自身不能自动释放其内部的 Objective-C 对象。</p>
+
+<p>当我们必须在C语言的结构体中放入 Objective-C 对象的时候，可以使用 void* 转型，或者使用 __unsafe_unretained 关键字。比如下面：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">Data</span> <span class="p">{</span>
+</span><span class='line'>      <span class="n">NSMutableArray</span> <span class="n">__unsafe_unretained</span> <span class="o">*</span><span class="n">array</span><span class="p">;</span>
+</span><span class='line'><span class="p">};</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样一来，该内存信息不在编译器内存管理对象内，仅仅是使用而已，没有对象的持有权。当然，对象所有权的持有者需要明确的管理他与该结构体的交互，不要引起不必要的错误(关于这一点，可以参考<a href="http://www.yifeiyang.net/development-of-the-iphone-simply-1/">iPhone开发之深入浅出 (1) — ARC是什么</a> 一文，明白为什么 __unsafe_unretained 是危险的)。</p>
+
+<ul>
+<li><h4>[id]与[void*]之间需要明示cast</h4></li>
+</ul>
+
+
+<p>ARC 有效的时候，由于编译器帮我们做了内存管理的工作，所以我们不需要太担心。但是当与 ARC 管理以外的对象类型交互的时候，就需要特殊的转型关键字，来决定所有权的归属问题。</p>
+
+<p>主要的转型关键字是:</p>
+
+<table border="1">
+<thead>
+    <tr>
+        <th>关键字</th>
+        <th>解释</th>
+    </tr>
+</thead>
+<tbody>
+    <tr>
+        <td>__bridge</td>
+        <td>单纯的类型转换，没有进行所有权的转移</td>
+    </tr>
+    <tr>
+        <td>__bridge_retained</td>
+        <td>类型转换是伴随所有权传递，转换前后变量都持有对象的所有权</td>
+    </tr>
+    <tr>
+        <td>__bridge_transfer</td>
+        <td>类型转换伴随所有权转移，被转换变量将失去对象的所有权</td>
+    </tr>
+</tbody>
+</table>
+
+
+<p>当我们在 Core Foundation 对象类型与 Objective-C 对象类型之间切换的时候，需要把握下面的因素：</p>
+
+<ul>
+<li>明确被转换类型是否是 ARC 管理的对象</li>
+<li>Core Foundation 对象类型不在 ARC 管理范畴内</li>
+<li>Cocoa Framework::Foundation 对象类型（即一般使用到的Objectie-C对象类型）在 ARC 的管理范畴内</li>
+<li>如果不在 ARC 管理范畴内的对象，那么要清楚 release 的责任应该是谁</li>
+<li>各种对象的生命周期是怎样的</li>
+</ul>
+
+
+<h3>为什么iOS中没有GC</h3>
+
+<p>我们已经知道ARC并不是GC（垃圾回收）了，那么，为什么iOS中不支持该机能呢？还特意搞出个ARC来。以下是我的分析：</p>
+
+<ul>
+<li>消耗CPU时间的处理尽量避免，以节约电池电量</li>
+<li>GC执行的时候，会停掉运行时库；这是最大的心结</li>
+<li>嵌入式设备本身内存就不是很大，如果GC不停的在后台运行，执行的频率会很高，严重影响性能</li>
+<li>UI动画处理是iOS的一大卖点，而有了GC后可能会引起不必要的性能损失</li>
+</ul>
+
+</div>
+
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style addthis_16x16_style">
+	
+	<a class="addthis_button_sinaweibo"></a>
+	
+	
+	<a class="addthis_button_facebook"></a>
+	
+	
+	
+	
+	<a class="addthis_button_compact"></a>
+	<a class="addthis_counter addthis_bubble_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/300/addthis_widget.js#pubid="></script>
+</div>
+
+
+
+<section id="comment">
+    <h1 class="title">Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+</section>
+</div>
+			</div>
+			<footer id="footer" class="inner"><p>
+	Copyright &copy; 2014 - 
+	
+    	Alvin Zhu
+	 - 
+	Powered by <a href="http://octopress.org">Octopress</a>
+</p>
+
+Design credit: <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a></footer>
+			<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
+
+
+<script type="text/javascript">
+      var disqus_shortname = 'alvinzhusblog';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://gbammc.github.io/blog/2013/12/02/zhuan-arcshen-ru-qian-chu/';
+        var disqus_url = 'http://gbammc.github.io/blog/2013/12/02/zhuan-arcshen-ru-qian-chu/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+	<script type="text/javascript">
+		var _gaq = _gaq || [];
+		_gaq.push(['_setAccount', 'UA-44493661-1']);
+		_gaq.push(['_trackPageview']);
+
+		(function() {
+			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+			ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		})();
+	</script>
+
+
+
+		</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Mac | Alvin Zhu]]></title>
+  <link href="http://gbammc.github.io/blog/categories/mac/atom.xml" rel="self"/>
+  <link href="http://gbammc.github.io/"/>
+  <updated>2014-04-22T23:57:55+08:00</updated>
+  <id>http://gbammc.github.io/</id>
+  <author>
+    <name><![CDATA[Alvin Zhu]]></name>
+    <email><![CDATA[gbammc@gmail.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Cocoa开发--事件监听]]></title>
+    <link href="http://gbammc.github.io/blog/2013/11/05/cocoakai-fa-an-jian-shi-jian-jian-ting/"/>
+    <updated>2013-11-05T21:45:00+08:00</updated>
+    <id>http://gbammc.github.io/blog/2013/11/05/cocoakai-fa-an-jian-shi-jian-jian-ting</id>
+    <content type="html"><![CDATA[<h1>前言</h1>
+
+<p><a href="https://github.com/gbammc/FastSwitcher">FastSwitcher</a> 是我开发的第一个Mac应用,它实现的功能是通过按下全局的快捷键来切换应用,以此达到提高效率的目的。开发的原动力是因为最近发现我的手指在触摸板的使用过程中越来越痛了,而且不停的control+tab来切换应用觉得实在很烦很低效,但我经常需要切换的应用其实也就那么三四个,所以FastSwitcher就应运而生了。而在开发过程中所学到的Cocoa开发知识我想记录下来,所以这是第一篇 —— 事件监听。</p>
+
+<!-- more -->
+
+
+<hr />
+
+<h1>全局快捷键</h1>
+
+<p>全局快捷键,这是FastSwitcher中最重要的部分了,通过底层的Carbon.framework提供的API,FastSwitcher向系统注册全局的快捷键,当相应的按键被按下时,系统就可以立刻切换到对应的程序。当然我们可以它来做更多的事,下面就介绍如何注册一个全局快捷键。</p>
+
+<h2>注册快捷键</h2>
+
+<p>需要用Carbon框架,当然少不了添加依赖链接,然后在对应文件上加上引用<code>#import &lt;Carbon/Carbon.h&gt;</code></p>
+
+<p>在方法中添加注册快捷键需要的变量:</p>
+
+<p>``` objc</p>
+
+<p>EventHotKeyRef gMyHotKeyRef;
+EventHotKeyID gMyHotKeyID;
+EventTypeSpec eventType;
+eventType.eventClass = kEventClassKeyboard;
+eventType.eventKind = kEventHotKeyPressed;</p>
+
+<p>```</p>
+
+<p>这些变量将会保存我们快捷键的基本信息。通过对EventTypeSpec的eventClass和eventKind分别赋予kEventClassKeyboard和kEventHotKeyPressed两个值,来声明这个快捷键响应的是键盘按键事件。</p>
+
+<p>接着我们注册一个实际的快捷键:</p>
+
+<p>``` objc</p>
+
+<p>// 快捷键的签名,实际类型为UInt32,所以用4个字符最好
+gMyHotKeyID.signature=&lsquo;hkid&rsquo;;
+// 快捷键的id，处理多个全局快捷键时最好的标识
+gMyHotKeyID.id=1;
+// 通过这个函数向系统注册快捷键
+RegisterEventHotKey(49, cmdKey + optionKey, gMyHotKeyID, GetApplicationEventTarget(), 0, &amp;gMyHotKeyRef);</p>
+
+<p>```</p>
+
+<p>因为Carbon是用基于C语言写成的,所以RegisterEventHotKey()调用形式是C类型,第一个参数的数字,代表最终响应的键值,49代表空格键。第二个参数是控制键参数,可以选cmdKey, shiftKey, optionKey, controlKey或者是它们的组合,需要注意的是它们的连接使用‘+’号。当快捷键注册成功后,最后一个参数将会返回这个快捷键在系统中的引用。我们可以保存这个引用以便在以后再取消该快捷键。</p>
+
+<h2>实现和注册回调函数</h2>
+
+<p>回调函数原型为</p>
+
+<p>``` objc</p>
+
+<p>OSStatus hotKeyHandler(EventHandlerCallRef nextHandler, EventRef anEvent, void *userData);</p>
+
+<p>```</p>
+
+<p>同样也是一个C类型函数，函数签名必须是上面的形式。示例实现代码如下：</p>
+
+<p>``` objc</p>
+
+<p>OSStatus hotKeyHandler(EventHandlerCallRef nextHandler, EventRef anEvent, void *userData) {</p>
+
+<pre><code>if (!((AZAppDelegate *)[NSApplication sharedApplication]。delegate)。enableHotKey) return noErr;
+
+EventHotKeyID hotKeyRef;
+
+GetEventParameter(anEvent, kEventParamDirectObject, typeEventHotKeyID, NULL, sizeof(hotKeyRef), NULL, &amp;hotKeyRef);
+
+unsigned int hotKeyId = hotKeyRef.id;
+
+switch (hotKeyId) {
+    case 1:
+        // do something
+        break;
+    case 2:
+        // do other thing
+        break;
+    default:
+        break;
+}
+
+return noErr;
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>处理多个全局快捷键的方式正如上面所示，通过判断快捷键的id值即可。最后我们在EventTypeSpec的赋值后面注册这个回调函数</p>
+
+<p>``` objc</p>
+
+<p>EventHotKeyRef gMyHotKeyRef;
+EventHotKeyID gMyHotKeyID;
+EventTypeSpec eventType;
+eventType.eventClass = kEventClassKeyboard;
+eventType.eventKind = kEventHotKeyPressed;
+InstallApplicationEventHandler(&amp;hotKeyHandler, 1, &amp;eventType, NULL, NULL);</p>
+
+<p>```</p>
+
+<p>至此，Mac系统就可以响应我们的快捷键了。</p>
+
+<hr />
+
+<h1>监听系统事件</h1>
+
+<p>全局快捷键的响应必须由控制键参数和最终响应的键同时按下才能触发。如果我们要监听任意按键事件或鼠标事件呢？那么就需要<code>NSEvent</code>下的这两个方法了：</p>
+
+<p>``` objc</p>
+
+<p>// 监听全局事件
++ (id)addGlobalMonitorForEventsMatchingMask:(NSEventMask)mask handler:(void (^)(NSEvent<em>))block;
+// 监听本地事件
++ (id)addLocalMonitorForEventsMatchingMask:(NSEventMask)mask handler:(NSEvent</em> (^)(NSEvent*))block;</p>
+
+<p>```</p>
+
+<p>这两个方法分别监听的是全局事件和本地事件。只要我们指定监听的<code>NSEventMask</code>类型，当对应事件触发时，我们就能够对其作进一步的处理。<code>NSEventMask</code>类型有十多种，这里就不全列出来了，不过基本覆盖了用户与系统所有的交互事件，在开发时选择合适的组合就好。</p>
+
+<p>全局事件和本地事件的不同之处，在于全局事件我们不可以修改或阻止它继续向其它应用传送。但对于本地事件来说我们还是有能力这么做的，所以本地事件回调的block里我们需要返回一个NSEvent的变量。示例代码如下：</p>
+
+<p>``` objc</p>
+
+<p>// 全局
+[NSEvent addGlobalMonitorForEventsMatchingMask:NSFlagsChangedMask handler:^(NSEvent *event){</p>
+
+<pre><code>NSUInteger flags = [event modifierFlags] &amp; NSDeviceIndependentModifierFlagsMask;
+if (flags == NSCommandKeyMask) {
+    // handle it
+}
+</code></pre>
+
+<p>}];
+// 本地
+[NSEvent addLocalMonitorForEventsMatchingMask:NSFlagsChangedMask handler:^(NSEvent *event){</p>
+
+<pre><code>NSUInteger flags = [event modifierFlags] &amp; NSDeviceIndependentModifierFlagsMask;
+if (flags == NSCommandKeyMask) {
+    // handle it
+}
+return event;
+</code></pre>
+
+<p>}];</p>
+
+<h2>```</h2>
+
+<h1>让控件响应特定事件</h1>
+
+<p>上面的方法已经很好很强大了，但如果我们要令特定控件响应某些事件呢？比如让NSTextField在按下esc键后清除所有内容，当鼠标移动到图片上时让其高亮，这样我们就不能简单地使用以上的方法了。但对于这种情况我们可以用<strong>NSResponder</strong>的方法处理。</p>
+
+<p><strong>NSResponder</strong>中定义了很多事件响应方法，如:</p>
+
+<p>``` objc</p>
+
+<ul>
+<li>(void)rightMouseDown:(NSEvent *)theEvent;</li>
+<li>(void)otherMouseDown:(NSEvent *)theEvent;</li>
+<li>(void)mouseUp:(NSEvent *)theEvent;</li>
+<li>(void)rightMouseUp:(NSEvent *)theEvent;</li>
+<li>(void)otherMouseUp:(NSEvent *)theEvent;</li>
+<li>(void)mouseMoved:(NSEvent *)theEvent;</li>
+<li>(void)mouseDragged:(NSEvent *)theEvent;</li>
+<li>(void)scrollWheel:(NSEvent *)theEvent;</li>
+<li>(void)rightMouseDragged:(NSEvent *)theEvent;</li>
+<li>(void)otherMouseDragged:(NSEvent *)theEvent;</li>
+<li>(void)mouseEntered:(NSEvent *)theEvent;</li>
+<li>(void)mouseExited:(NSEvent *)theEvent;</li>
+<li>(void)keyDown:(NSEvent *)theEvent;</li>
+<li>(void)keyUp:(NSEvent *)theEvent;</li>
+<li>(void)flagsChanged:(NSEvent *)theEvent;</li>
+<li>(void)tabletPoint:(NSEvent *)theEvent;</li>
+<li>(void)tabletProximity:(NSEvent *)theEvent;</li>
+<li>(void)cursorUpdate:(NSEvent *)event;</li>
+</ul>
+
+
+<p>```</p>
+
+<p>通过定制这些方法，就可以让控件的表现得更独特或让用户感到更便捷，下面是按下<code>cmd + W</code>关闭窗口事件的示例代码:</p>
+
+<p>``` objc</p>
+
+<ul>
+<li>(void)keyDown:(NSEvent <em>)theEvent {
+  NSString </em>key = [theEvent charactersIgnoringModifiers];
+  if (([theEvent modifierFlags] &amp; NSCommandKeyMask) &amp;&amp; [key isEqualToString:@&ldquo;w&rdquo;]) {
+      [self close];
+  } else {
+      [super keyDown:theEvent];
+  }
+}</li>
+</ul>
+
+
+<p>```</p>
+
+<hr />
+
+<h1>PS：</h1>
+
+<p>经常在论坛上看到有人说Mac开发很难，我想可能是因为在Mac开发方面的中文资料太少了，在开发FastSwitcher的过程中我也碰到了不少问题，不过基本上都是靠苹果的英文文档，StackOverflow或Google搜到的国外博客的帮助下解决的。现在OS X免费了，加上Mac产品优秀的用户体验(可能有些装X，但谁用谁知道)，我想以后Mac的用户会越来越多，市场也会越来越大，真心希望Mac开发的阵营也能更大~</p>
+]]></content>
+  </entry>
+  
+</feed>
