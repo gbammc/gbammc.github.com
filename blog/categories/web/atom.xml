@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Web | Alvin Zhu]]></title>
   <link href="http://gbammc.github.io/blog/categories/web/atom.xml" rel="self"/>
   <link href="http://gbammc.github.io/"/>
-  <updated>2014-08-26T12:13:05+08:00</updated>
+  <updated>2014-08-26T13:31:09+08:00</updated>
   <id>http://gbammc.github.io/</id>
   <author>
     <name><![CDATA[Alvin Zhu]]></name>
@@ -145,15 +145,9 @@ ticket=lahdoiasdhoiwdowijaksjdoaisdjoasidja
 
 <h1>6. <a href="http://baike.baidu.com/view/50325.htm">XSS</a> 比 <a href="http://baike.baidu.com/view/1609487.htm">XSRF</a> 要更容易防范</h1>
 
-<p>  XSS 攻击的原理是，攻击者插入一段可执行的 JavaScripts 脚本，该脚本会读出用户浏览器的 cookies 并将它传输给攻击者，攻击者得到用户的 Cookies 后，即可冒充用户。</p>
+<p>  XSS 攻击的原理是，攻击者插入一段可执行的 JavaScripts 脚本，该脚本会读出用户浏览器的 cookies 并将它传输给攻击者，攻击者得到用户的 Cookies 后，即可冒充用户。但是要防范 XSS 也很简单，在写入 cookies 时，将 <code>HttpOnly</code> 设置为 <code>true</code>，客户端 JavaScripts 就无法读取该 cookies 的值，就可以有效防范 XSS 攻击。因为 Tokens 也是储存在本地的 session storage 或者是客户端的 cookies 中，也是会受到 XSS 攻击。所以在使用 tokens 的时候，必须要考虑过期机制，不然攻击者就可以永久持有受害用户帐号。</p>
 
-<p>  但是要防范 XSS 也很简单，在写入 cookies 时，将 <code>HttpOnly</code> 设置为 <code>true</code>，客户端 JavaScripts 就无法读取该 cookies 的值，就可以有效防范 XSS 攻击。</p>
-
-<p>  因为 Tokens 也是储存在本地的 session storage 或者是客户端的 cookies 中，也是会受到 XSS 攻击。所以在使用 tokens 的时候，必须要考虑过期机制，不然攻击者就可以永久持有受害用户帐号。</p>
-
-<p>  相比 XSS，XSRF 的危害性更大，因为大多数 Web 框架都已经内置了 XSS 防范机制（例如在 Ruby on Rails 中，用户的输入在输出的时候都会做<code>转义</code>操作，攻击者插入的脚本就无法执行），</p>
-
-<p>  对于大部分开发者而言，甚至连 XSRF 都不知道是什么玩意，更别提防范了。XSRF 目前并不是每个 Web 框架都有防范机制，因此开发者更应该留意 XSRF 。</p>
+<p>  相比 XSS，XSRF 的危害性更大，因为大多数 Web 框架都已经内置了 XSS 防范机制（例如在 Ruby on Rails 中，用户的输入在输出的时候都会做<code>转义</code>操作，攻击者插入的脚本就无法执行），对于大部分开发者而言，甚至连 XSRF 都不知道是什么玩意，更别提防范了。XSRF 目前并不是每个 Web 框架都有防范机制，因此开发者更应该留意 XSRF 。</p>
 
 <h1>7. 注意 token 的大小</h1>
 
