@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Swift | Alvin Zhu]]></title>
+  <link href="http://gbammc.github.io/blog/categories/swift/atom.xml" rel="self"/>
+  <link href="http://gbammc.github.io/"/>
+  <updated>2014-08-26T10:32:35+08:00</updated>
+  <id>http://gbammc.github.io/</id>
+  <author>
+    <name><![CDATA[Alvin Zhu]]></name>
+    <email><![CDATA[gbammc@gmail.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Swift官方文档阅读笔记]]></title>
+    <link href="http://gbammc.github.io/blog/2014/06/03/swift-101/"/>
+    <updated>2014-06-03T23:11:37+08:00</updated>
+    <id>http://gbammc.github.io/blog/2014/06/03/swift-101</id>
+    <content type="html"><![CDATA[<h1>前言</h1>
+
+<p>在WWDC14前曾收听了<code>IT公论</code>第57期节目，该期节目主要讨论了 Objective-C 作为目前最流行 App 的开发语言是否到了烈士暮年的阶段，并且最后预言了苹果将会为此而开发新的编程语言。但万万没想到就是在今年，苹果真的推出了自家研发的<code>Swift</code>!。</p>
+
+<p>据资料显示，Swift开始于2010年7月左右，最初只有很少人知道这个项目的存在。2011后期新加入几位。2013成为Developer Tools的重点。吸收了来自Objective-C, Rust, Haskell, Ruby, Python, C#, CLU以及很多其它语言的元素。这里是其中一位开发者的<a href="http://nondot.org/sabre/">主页</a>。</p>
+
+<p>伴随 Swift 推出的还有 <code>Playground</code>，而苹果是这样描述Playground的：</p>
+
+<p>```
+利用Playground，你可以：</p>
+
+<ul>
+<li>设计一个新算法，并可以直接观察它每一步的运行结果</li>
+<li>在提交到测试套件前，可以验证你的新测试用例</li>
+<li>尝试新的API来升级你的Swift编程技能
+```</li>
+</ul>
+
+
+<h1>Swift</h1>
+
+<h2>基础部分</h2>
+
+<p>只记录一些需要特别注意的部分</p>
+
+<ul>
+<li>文档中提到，Swift会大量使用常量，对于不会改变的值就应该定义为常量。</li>
+</ul>
+
+
+<p><code>
+let definetConstant = "I am constant" // 使用关键字 let 定义一个新的常量
+</code></p>
+
+<ul>
+<li>绝大多数的字符都可以作为常量和变量的名字：</li>
+</ul>
+
+
+<p>```
+let π = 3.14159</p>
+
+<p>let 你好 = &ldquo;你好世界&rdquo;</p>
+
+<p>let 🐶🐮 = &ldquo;dogcow”</p>
+
+<p>```</p>
+
+<ul>
+<li>如果不得已需要用Swift保留的关键字作为变量或常量的名字，那么应该在前后加上<code>`</code>：</li>
+</ul>
+
+
+<p><code>``
+var</code>break` = 1</p>
+
+<p>var <code>return</code> = 2</p>
+
+<p>var result = <code>break</code> + <code>return</code>
+```</p>
+
+<ul>
+<li>和<code>NSInteger</code>一样，Swift中的<code>Int</code>也是根据当前系统平台而有不同的大小：</li>
+</ul>
+
+
+<p><code>
+32位系统中，Int的大小为Int32
+64位系统中，Int的大小为Int64
+</code></p>
+
+<h2>基本操作符</h2>
+
+<ul>
+<li>与 C 和 Objective-C 不同，Swift的赋值操作符不会有返回值，以下两个例子都会报错：</li>
+</ul>
+
+
+<p>```</p>
+
+<p>if x = y {</p>
+
+<pre><code>// 报错
+</code></pre>
+
+<p>}</p>
+
+<p>var a = b = c = 0 // 报错</p>
+
+<p>```</p>
+
+<ul>
+<li><p>默认情况下，普通的四则运算符都不会允许溢出的发生，但可以使用允许溢出的操作符</p></li>
+<li><p><code>%</code>求余操作符遵循以下运算求解：</p></li>
+</ul>
+
+
+<p>```
+// remainder = a % b
+a = (b × some multiplier) + remainder</p>
+
+<p>// b的符号将会被忽略
+-9 % 4    // equals -1
+-9 % -4    // equals -1
+```</p>
+
+<ul>
+<li><code>%</code>对浮点数同样有效：</li>
+</ul>
+
+
+<p><code>
+8 % 2.5    // equals 0.5
+</code></p>
+]]></content>
+  </entry>
+  
+</feed>

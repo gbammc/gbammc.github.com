@@ -1,0 +1,305 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Swift官方文档阅读笔记 - Alvin Zhu</title>
+	<meta name="author" content="Alvin Zhu">
+
+	
+	<meta name="description" content="Swift官方文档阅读笔记 前言 在WWDC14前曾收听了IT公论第57期节目，该期节目主要讨论了 Objective-C 作为目前最流行 App 的开发语言是否到了烈士暮年的阶段，并且最后预言了苹果将会为此而开发新的编程语言。但万万没想到就是在今年，苹果真的推出了自家研发的Swift!。 &hellip;">
+	<meta name="keywords" content="apple swift playground wwdc14">
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Alvin Zhu" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://gbammc.github.io/blog/2014/06/03/swift-101/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,400,700' rel='stylesheet' type='text/css'>
+	
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">	
+	<script src="/javascripts/md5.js"></script>
+	<script type="text/javascript">
+		document.write("<img src='http://www.gravatar.com/avatar/" + MD5("gbammc@gmail.com") + "?s=160' alt='Profile Picture' style='width: 160px;' />");
+	</script>
+</div>
+<h1><a href="/">Alvin Zhu</a></h1>
+<p class="subtitle">"人类渺小，<br>但不代表我要永世困于壁内。"</p>
+<nav id="main-nav"><ul class="main">
+	<li><a href="/">首页</a></li>
+	<li><a href="/blog/archives">全部文章</a></li>
+	<li><a href="/blog/categories">分类列表</a></li>
+	<li><a href="/about">关于我</a></li>
+	<li><a href="/friends">友情链接</a></li>
+	<li><a href="https://itunes.apple.com/cn/app/id574437211">ifanr - 爱范儿客户端</a></li>
+	<li><a href="https://itunes.apple.com/cn/app/id611036705">数读 - 用数字读懂世界</a></li>
+  <li><a href="https://itunes.apple.com/us/app/id890729702">Q.fm - 最好的《一些事一些情》第三方应用</a></li>
+	<li><a href="http://www.scau123.com/hnb/">iSCAU - 华农学子必备</a></li>
+</ul></nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+		<a class="weibo" href="http://www.weibo.com/blackteafeng" title="Weibo">Weibo</a>
+		
+		
+		
+		<a class="google" href="https://plus.google.com/101572322776670119375" rel="author" title="Google+">Google+</a>
+		
+		
+		<a class="twitter" href="http://twitter.com/alvin_zhu" title="Twitter">Twitter</a>
+		
+		
+		<a class="github" href="https://github.com/gbammc" title="GitHub">GitHub</a>
+		
+		
+		
+		
+		
+		
+		
+		<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			
+				
+			
+			<div class="mid-col-container">
+				<div id="content" class="inner"><article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<h1 class="title" itemprop="name">Swift官方文档阅读笔记</h1>
+	<div class="entry-content" itemprop="articleBody"><h1>前言</h1>
+
+<p>在WWDC14前曾收听了<code>IT公论</code>第57期节目，该期节目主要讨论了 Objective-C 作为目前最流行 App 的开发语言是否到了烈士暮年的阶段，并且最后预言了苹果将会为此而开发新的编程语言。但万万没想到就是在今年，苹果真的推出了自家研发的<code>Swift</code>!。</p>
+
+<p>据资料显示，Swift开始于2010年7月左右，最初只有很少人知道这个项目的存在。2011后期新加入几位。2013成为Developer Tools的重点。吸收了来自Objective-C, Rust, Haskell, Ruby, Python, C#, CLU以及很多其它语言的元素。这里是其中一位开发者的<a href="http://nondot.org/sabre/">主页</a>。</p>
+
+<p>伴随 Swift 推出的还有 <code>Playground</code>，而苹果是这样描述Playground的：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>利用Playground，你可以：
+</span><span class='line'>
+</span><span class='line'>* 设计一个新算法，并可以直接观察它每一步的运行结果
+</span><span class='line'>* 在提交到测试套件前，可以验证你的新测试用例
+</span><span class='line'>* 尝试新的API来升级你的Swift编程技能</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>Swift</h1>
+
+<h2>基础部分</h2>
+
+<p>只记录一些需要特别注意的部分</p>
+
+<ul>
+<li>文档中提到，Swift会大量使用常量，对于不会改变的值就应该定义为常量。</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>let definetConstant = "I am constant" // 使用关键字 let 定义一个新的常量</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>绝大多数的字符都可以作为常量和变量的名字：</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>let π = 3.14159
+</span><span class='line'>
+</span><span class='line'>let 你好 = "你好世界"
+</span><span class='line'>
+</span><span class='line'>let 🐶🐮 = "dogcow”
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>如果不得已需要用Swift保留的关键字作为变量或常量的名字，那么应该在前后加上<code>`</code>：</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>var `break` = 1
+</span><span class='line'>
+</span><span class='line'>var `return` = 2
+</span><span class='line'>
+</span><span class='line'>var result = `break` + `return`</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>和<code>NSInteger</code>一样，Swift中的<code>Int</code>也是根据当前系统平台而有不同的大小：</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>32位系统中，Int的大小为Int32
+</span><span class='line'>64位系统中，Int的大小为Int64</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>基本操作符</h2>
+
+<ul>
+<li>与 C 和 Objective-C 不同，Swift的赋值操作符不会有返回值，以下两个例子都会报错：</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>
+</span><span class='line'>if x = y {
+</span><span class='line'>    // 报错
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>var a = b = c = 0 // 报错
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li><p>默认情况下，普通的四则运算符都不会允许溢出的发生，但可以使用允许溢出的操作符</p></li>
+<li><p><code>%</code>求余操作符遵循以下运算求解：</p></li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>// remainder = a % b
+</span><span class='line'>a = (b × some multiplier) + remainder
+</span><span class='line'>
+</span><span class='line'>// b的符号将会被忽略
+</span><span class='line'>-9 % 4    // equals -1
+</span><span class='line'>-9 % -4    // equals -1</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li><code>%</code>对浮点数同样有效：</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>8 % 2.5    // equals 0.5</span></code></pre></td></tr></table></div></figure>
+
+</div>
+
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style addthis_16x16_style">
+	
+	<a class="addthis_button_sinaweibo"></a>
+	
+	
+	<a class="addthis_button_facebook"></a>
+	
+	
+	
+	
+	<a class="addthis_button_compact"></a>
+	<a class="addthis_counter addthis_bubble_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/300/addthis_widget.js#pubid="></script>
+</div>
+
+
+
+<section id="comment">
+    <h1 class="title">Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+</section>
+</div>
+			</div>
+			<footer id="footer" class="inner"><p>
+	Copyright &copy; 2014 - 
+	
+    	Alvin Zhu
+	 - 
+	Powered by <a href="http://octopress.org">Octopress</a>
+</p>
+
+Design credit: <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a></footer>
+			<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
+
+
+<script type="text/javascript">
+      var disqus_shortname = 'alvinzhusblog';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://gbammc.github.io/blog/2014/06/03/swift-101/';
+        var disqus_url = 'http://gbammc.github.io/blog/2014/06/03/swift-101/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+	<script type="text/javascript">
+		var _gaq = _gaq || [];
+		_gaq.push(['_setAccount', 'UA-44493661-1']);
+		_gaq.push(['_trackPageview']);
+
+		(function() {
+			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+			ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		})();
+	</script>
+
+
+
+		</div>
+	</div>
+</body>
+</html>

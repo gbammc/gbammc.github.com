@@ -47,6 +47,7 @@
 	<li><a href="/friends">友情链接</a></li>
 	<li><a href="https://itunes.apple.com/cn/app/id574437211">ifanr - 爱范儿客户端</a></li>
 	<li><a href="https://itunes.apple.com/cn/app/id611036705">数读 - 用数字读懂世界</a></li>
+  <li><a href="https://itunes.apple.com/us/app/id890729702">Q.fm - 最好的《一些事一些情》第三方应用</a></li>
 	<li><a href="http://www.scau123.com/hnb/">iSCAU - 华农学子必备</a></li>
 </ul></nav>
 <nav id="sub-nav">
@@ -243,6 +244,14 @@
 
 
 <p>博文是采用markdown语法，另外增加了一些扩充的插件，markdown的介绍文章网上可以搜到很多，比如<a href="http://daringfireball.net/projects/markdown/">这个</a>。</p>
+
+<h4>zsh下无法新建博客的原因</h4>
+
+<p>在 zsh 中若出现‘*’, ‘(’, ‘|’, ‘&lt;’, ‘[’, or ‘?’符号，则将其识别为查找文件名的通配符</p>
+
+<p>快速解决：用引号括起来$ rake &ldquo;new_post[new_post.markdown]&rdquo;</p>
+
+<p>彻底解决：取消zsh的通配(GLOB), 在.zshrc中加入alias rake=&ldquo;noglob rake&rdquo;</p>
 
 <hr />
 

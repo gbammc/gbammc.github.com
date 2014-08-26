@@ -7,7 +7,7 @@
 	<meta name="author" content="Alvin Zhu">
 
 	
-	<meta name="description" content="Apr 22nd, 2014 django, python Comments Django + Pip + Virtualenv ＋ Postgres 前言 最近兴趣所致，想学习利用 Django 编写一个项目，无奈之前不太懂 python，在机子乱搞一通后发现系统的环境都被玩坏了， &hellip;">
+	<meta name="description" content="Aug 26th, 2014 Web Comments 关于 Token，你应该知道的十件事 原文是一篇很好的讲述 Token 在 Web 应用中使用的文章，而这是我和 Special 合作翻译的译文。 1. Token 应该被保存起来（放到 local / session stograge &hellip;">
 	
 
   <!-- http://t.co/dKP3o1e -->
@@ -47,6 +47,7 @@
 	<li><a href="/friends">友情链接</a></li>
 	<li><a href="https://itunes.apple.com/cn/app/id574437211">ifanr - 爱范儿客户端</a></li>
 	<li><a href="https://itunes.apple.com/cn/app/id611036705">数读 - 用数字读懂世界</a></li>
+  <li><a href="https://itunes.apple.com/us/app/id890729702">Q.fm - 最好的《一些事一些情》第三方应用</a></li>
 	<li><a href="http://www.scau123.com/hnb/">iSCAU - 华农学子必备</a></li>
 </ul></nav>
 <nav id="sub-nav">
@@ -85,6 +86,219 @@
 			<div class="mid-col-container">
 				<div id="content" class="inner">
 <div itemscope itemtype="http://schema.org/Blog">
+
+
+    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-08-26T09:58:11+08:00" data-updated="true" itemprop="datePublished">Aug 26<span>th</span>, 2014</time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/web/'>Web</a>
+
+
+</div>
+		
+			<span class="comments"><a href="/blog/2014/08/26/10-things-you-should-know-about-tokens/#disqus_thread">Comments</a></span>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2014/08/26/10-things-you-should-know-about-tokens/" itemprop="url">关于 Token，你应该知道的十件事</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+		<p>原文是一篇很好的讲述 Token 在 Web 应用中使用的<a href="https://auth0.com/blog/2014/01/27/ten-things-you-should-know-about-tokens-and-cookies/#token-storage">文章</a>，而这是我和 <a href="http://www.specyci.com/">Special</a> 合作翻译的译文。</p>
+
+<h1>1. Token 应该被保存起来（放到 local / session stograge 或者 cookies）</h1>
+
+<p>  在单页应用程序中，有些用户刷新浏览器后会带来一些跟 token 相关的问题。而解决方法很简单：你应该把 token 保存到起来：<a href="https://github.com/auth0/angular-token-auth/blob/master/auth.client.js#L31">放到 session storage, local storage 或者是客户端的 cookie 里</a>。而浏览器不支持 session storage 时都应该转存到 cookies 里。</p>
+
+<p>  如果你想“我把 token 保存到 cookie ，不就跟以前没有任何分别？”。可是在这种情况下你只是把 cookie 当作一个储存机制，而不是一种<a href="http://sitr.us/2011/08/26/cookies-are-bad-for-you.html">验证机制</a>。（比如说，这个 cookie 不会被 Web 框架用于用户验证，所以没有 XSRF 攻击的危险）。</p>
+
+
+		
+		<a href="/blog/2014/08/26/10-things-you-should-know-about-tokens/" class="more-link">继续阅读</a>
+	</div>
+
+</article>
+
+
+    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-06-03T23:11:37+08:00" data-updated="true" itemprop="datePublished">Jun 3<span>rd</span>, 2014</time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/swift/'>Swift</a>
+
+
+</div>
+		
+			<span class="comments"><a href="/blog/2014/06/03/swift-101/#disqus_thread">Comments</a></span>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2014/06/03/swift-101/" itemprop="url">Swift官方文档阅读笔记</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+		<h1>前言</h1>
+
+<p>在WWDC14前曾收听了<code>IT公论</code>第57期节目，该期节目主要讨论了 Objective-C 作为目前最流行 App 的开发语言是否到了烈士暮年的阶段，并且最后预言了苹果将会为此而开发新的编程语言。但万万没想到就是在今年，苹果真的推出了自家研发的<code>Swift</code>!。</p>
+
+<p>据资料显示，Swift开始于2010年7月左右，最初只有很少人知道这个项目的存在。2011后期新加入几位。2013成为Developer Tools的重点。吸收了来自Objective-C, Rust, Haskell, Ruby, Python, C#, CLU以及很多其它语言的元素。这里是其中一位开发者的<a href="http://nondot.org/sabre/">主页</a>。</p>
+
+<p>伴随 Swift 推出的还有 <code>Playground</code>，而苹果是这样描述Playground的：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>利用Playground，你可以：
+</span><span class='line'>
+</span><span class='line'>* 设计一个新算法，并可以直接观察它每一步的运行结果
+</span><span class='line'>* 在提交到测试套件前，可以验证你的新测试用例
+</span><span class='line'>* 尝试新的API来升级你的Swift编程技能</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>Swift</h1>
+
+<h2>基础部分</h2>
+
+<p>只记录一些需要特别注意的部分</p>
+
+<ul>
+<li>文档中提到，Swift会大量使用常量，对于不会改变的值就应该定义为常量。</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>let definetConstant = "I am constant" // 使用关键字 let 定义一个新的常量</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>绝大多数的字符都可以作为常量和变量的名字：</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>let π = 3.14159
+</span><span class='line'>
+</span><span class='line'>let 你好 = "你好世界"
+</span><span class='line'>
+</span><span class='line'>let 🐶🐮 = "dogcow”
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>如果不得已需要用Swift保留的关键字作为变量或常量的名字，那么应该在前后加上<code>`</code>：</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>var `break` = 1
+</span><span class='line'>
+</span><span class='line'>var `return` = 2
+</span><span class='line'>
+</span><span class='line'>var result = `break` + `return`</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>和<code>NSInteger</code>一样，Swift中的<code>Int</code>也是根据当前系统平台而有不同的大小：</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>32位系统中，Int的大小为Int32
+</span><span class='line'>64位系统中，Int的大小为Int64</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>基本操作符</h2>
+
+<ul>
+<li>与 C 和 Objective-C 不同，Swift的赋值操作符不会有返回值，以下两个例子都会报错：</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>
+</span><span class='line'>if x = y {
+</span><span class='line'>    // 报错
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>var a = b = c = 0 // 报错
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li><p>默认情况下，普通的四则运算符都不会允许溢出的发生，但可以使用允许溢出的操作符</p></li>
+<li><p><code>%</code>求余操作符遵循以下运算求解：</p></li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>// remainder = a % b
+</span><span class='line'>a = (b × some multiplier) + remainder
+</span><span class='line'>
+</span><span class='line'>// b的符号将会被忽略
+</span><span class='line'>-9 % 4    // equals -1
+</span><span class='line'>-9 % -4    // equals -1</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li><code>%</code>对浮点数同样有效：</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>8 % 2.5    // equals 0.5</span></code></pre></td></tr></table></div></figure>
+
+
+		
+		
+	</div>
+
+</article>
 
 
     <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
@@ -402,52 +616,11 @@
 
 </article>
 
-
-    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
-	<div class="meta">
-		<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-10-01T11:40:00+08:00" data-updated="true" itemprop="datePublished">Oct 1<span>st</span>, 2013</time></div>
-		<div class="tags">
-
-
-	<a class='category' href='/blog/categories/sui-bi/'>随笔</a>
-
-
-</div>
-		
-			<span class="comments"><a href="/blog/2013/10/01/hello-world/#disqus_thread">Comments</a></span>
-		
-	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2013/10/01/hello-world/" itemprop="url">Hello World</a></h1>
-	<div class="entry-content" itemprop="articleBody">
-		<p>折腾了两个晚上，终于搞好Octopress啦~</p>
-
-<p>按照编程习惯，第一篇文章献给&#8221;Hello World！&#8221;。</p>
-
-<p>决定写Blog，一方面是想对所学知识进行梳理，另一方面是想自己写的东西也能对别人有些帮助，正所谓&#8221;予人玫瑰，手留余香&#8221;，这同时是一个相互学习的机会。</p>
-
-<p>而以后要做的，就是坚持写Blog的习惯！</p>
-
-		
-		
-	</div>
-
-</article>
-
 </div>
 <nav id="pagenavi">
     
+    
+        <a href="/blog/page/2/" class="next">Next</a>
     
     <div class="center"><a href="/blog/archives">Blog Archives</a></div>
 </nav></div>
