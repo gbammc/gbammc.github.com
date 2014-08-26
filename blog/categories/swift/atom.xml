@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Swift | Alvin Zhu]]></title>
   <link href="http://gbammc.github.io/blog/categories/swift/atom.xml" rel="self"/>
   <link href="http://gbammc.github.io/"/>
-  <updated>2014-08-26T10:32:35+08:00</updated>
+  <updated>2014-08-26T10:33:46+08:00</updated>
   <id>http://gbammc.github.io/</id>
   <author>
     <name><![CDATA[Alvin Zhu]]></name>
@@ -23,6 +23,9 @@
 <p>在WWDC14前曾收听了<code>IT公论</code>第57期节目，该期节目主要讨论了 Objective-C 作为目前最流行 App 的开发语言是否到了烈士暮年的阶段，并且最后预言了苹果将会为此而开发新的编程语言。但万万没想到就是在今年，苹果真的推出了自家研发的<code>Swift</code>!。</p>
 
 <p>据资料显示，Swift开始于2010年7月左右，最初只有很少人知道这个项目的存在。2011后期新加入几位。2013成为Developer Tools的重点。吸收了来自Objective-C, Rust, Haskell, Ruby, Python, C#, CLU以及很多其它语言的元素。这里是其中一位开发者的<a href="http://nondot.org/sabre/">主页</a>。</p>
+
+<!-- more -->
+
 
 <p>伴随 Swift 推出的还有 <code>Playground</code>，而苹果是这样描述Playground的：</p>
 
