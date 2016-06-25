@@ -1,75 +1,56 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>
+---
+layout: null
+sitemap:
+  exclude: 'yes'
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  {% for post in site.posts %}
+    {% unless post.published == false %}
     <url>
-        <loc>http://gbammc.github.io/blog/2013/10/01/hello-world/</loc>
-        <lastmod>2014-04-22T21:21:12+08:00</lastmod>
+      <loc>{{ site.url }}{{ post.url }}</loc>
+      {% if post.sitemap.lastmod %}
+        <lastmod>{{ post.sitemap.lastmod | date: "%Y-%m-%d" }}</lastmod>
+      {% elsif post.date %}
+        <lastmod>{{ post.date | date_to_xmlschema }}</lastmod>
+      {% else %}
+        <lastmod>{{ site.time | date_to_xmlschema }}</lastmod>
+      {% endif %}
+      {% if post.sitemap.changefreq %}
+        <changefreq>{{ post.sitemap.changefreq }}</changefreq>
+      {% else %}
+        <changefreq>monthly</changefreq>
+      {% endif %}
+      {% if post.sitemap.priority %}
+        <priority>{{ post.sitemap.priority }}</priority>
+      {% else %}
+        <priority>0.5</priority>
+      {% endif %}
     </url>
+    {% endunless %}
+  {% endfor %}
+  {% for page in site.pages %}
+    {% unless page.sitemap.exclude == "yes" %}
     <url>
-        <loc>http://gbammc.github.io/blog/2013/10/02/an-zhuang-he-pei-zhi-octopress/</loc>
-        <lastmod>2014-06-04T10:03:54+08:00</lastmod>
+      <loc>{{ site.url }}{{ page.url | remove: "index.html" }}</loc>
+      {% if page.sitemap.lastmod %}
+        <lastmod>{{ page.sitemap.lastmod | date: "%Y-%m-%d" }}</lastmod>
+      {% elsif page.date %}
+        <lastmod>{{ page.date | date_to_xmlschema }}</lastmod>
+      {% else %}
+        <lastmod>{{ site.time | date_to_xmlschema }}</lastmod>
+      {% endif %}
+      {% if page.sitemap.changefreq %}
+        <changefreq>{{ page.sitemap.changefreq }}</changefreq>
+      {% else %}
+        <changefreq>monthly</changefreq>
+      {% endif %}
+      {% if page.sitemap.priority %}
+        <priority>{{ page.sitemap.priority }}</priority>
+      {% else %}
+        <priority>0.3</priority>
+      {% endif %}
     </url>
-    <url>
-        <loc>http://gbammc.github.io/blog/2013/10/04/theosyue-yu-kai-fa/</loc>
-        <lastmod>2014-04-22T21:21:12+08:00</lastmod>
-    </url>
-    <url>
-        <loc>
-            http://gbammc.github.io/blog/2013/10/06/iosde-duo-xian-cheng-fen-lei-yu-ying-yong/
-        </loc>
-        <lastmod>2014-04-22T21:21:12+08:00</lastmod>
-    </url>
-    <url>
-        <loc>http://gbammc.github.io/blog/2013/11/05/cocoakai-fa-an-jian-shi-jian-jian-ting/</loc>
-        <lastmod>2014-04-22T21:21:12+08:00</lastmod>
-    </url>
-    <url>
-        <loc>http://gbammc.github.io/blog/2013/12/02/zhuan-arcshen-ru-qian-chu/</loc>
-        <lastmod>2014-04-22T21:21:12+08:00</lastmod>
-    </url>
-    <url>
-        <loc>
-            http://gbammc.github.io/blog/2014/01/20/wo-shi-zen-yang-xue-xi-ce-shi-wo-de-railsying-yong-de-part1-kai-duan/
-        </loc>
-        <lastmod>2014-04-22T21:21:12+08:00</lastmod>
-    </url>
-    <url>
-        <loc>http://gbammc.github.io/blog/2014/02/16/using-solr-and-sunspot-in-ruby/</loc>
-        <lastmod>2014-04-22T23:54:39+08:00</lastmod>
-    </url>
-    <url>
-        <loc>http://gbammc.github.io/blog/2014/04/22/django-101/</loc>
-        <lastmod>2014-04-22T23:55:47+08:00</lastmod>
-    </url>
-    <url>
-        <loc>http://gbammc.github.io/blog/2014/06/03/swift-101/</loc>
-        <lastmod>2014-08-26T10:33:46+08:00</lastmod>
-    </url>
-    <url>
-        <loc>http://gbammc.github.io/blog/2014/08/26/10-things-you-should-know-about-tokens/</loc>
-        <lastmod>2014-08-26T13:25:17+08:00</lastmod>
-    </url>
-    <url>
-        <loc>http://gbammc.github.io/about/</loc>
-        <lastmod>2014-04-22T21:21:12+08:00</lastmod>
-    </url>
-    <url>
-        <loc>http://gbammc.github.io/blog/archives/</loc>
-        <lastmod>2014-08-26T13:25:17+08:00</lastmod>
-    </url>
-    <url>
-        <loc>http://gbammc.github.io/blog/categories/</loc>
-        <lastmod>2014-04-22T21:21:12+08:00</lastmod>
-    </url>
-    <url>
-        <loc>http://gbammc.github.io/friends/</loc>
-        <lastmod>2014-04-22T21:21:12+08:00</lastmod>
-    </url>
-    <url>
-        <loc>http://gbammc.github.io/</loc>
-        <lastmod>2014-08-26T13:25:17+08:00</lastmod>
-    </url>
-    <url>
-        <loc>http://gbammc.github.io/robots.txt</loc>
-        <lastmod>2014-04-22T21:21:12+08:00</lastmod>
-    </url>
+    {% endunless %}
+  {% endfor %}
 </urlset>

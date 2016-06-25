@@ -1,0 +1,45 @@
+name: Alvin Zhu
+description: "Nothing is true, everything is permitted"
+keywords: iOS, web, css, html, ruby, cocoa, web development
+
+aboutPage: true
+
+markdown: kramdown
+highlighter: rouge
+
+paginate: 10
+baseurl: /
+domain_name: 'http://alvinzhu.me'
+google_analytics: 'UA-44493661-1'
+disqus: true
+disqus_shortname: 'alvinzhusblog'
+
+gems: [jekyll-paginate]
+
+# Details for the RSS feed generator
+url:            'http://alvinzhu.me'
+author:         'Alvin Zhu'
+authorTwitter:  'alvin_zhu'
+authorWeibo:    '877731681'
+
+permalink: /blog/:year/:month/:day/:title/
+
+defaults:
+  -
+    scope:
+      path: "" # empty string for all files
+      type: pages
+    values:
+      layout: default
+  -
+    scope:
+      path: "" # empty string for all files
+      type: posts
+    values:
+      layout: post
+  -
+    scope:
+      path: ""
+      type: drafts
+    values:
+      layout: post

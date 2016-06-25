@@ -1,0 +1,11 @@
+<nav class="main-nav">
+    {% if page.url != "/index.html" %}
+        <a href="{{ site.baseurl }}"> <span class="arrow">←</span> Home </a>
+    {% endif %}
+
+    {% if page.url != "/about/" %}
+        {% if site.aboutPage %}
+            <a href="{{ site.baseurl }}about">关于 </a>
+        {% endif %}
+    {% endif %}
+</nav>
