@@ -48,6 +48,11 @@ html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abb
     margin-bottom: 20px;
 }
 
+#post-list li {
+    margin-top: 2em;
+    margin-bottom: 2em;
+}
+
 /* Base */
 html, body { height: 100%; }
 
@@ -418,7 +423,7 @@ Post List
 }
 
 #post-list li+li {
-    padding-top: 20px;
+    padding-top: 2em;
     border-top: 1px solid #eee;
 }
 
