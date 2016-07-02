@@ -83,7 +83,7 @@ Xcode8 提供新的签名管理功能，带来了以下新特性：
 
 ![新引用配置文件的方式](http://ww3.sinaimg.cn/large/4ccba622jw1f58iafxocuj20nc059t9k.jpg)
 
-新 `PROVISIONING_PROFILE_SPECIFIER` 编译设置将摒弃以前通过 unique id 引用配置文件的方式，改为通过配置文件名称去引用，这样做的好处是以前当我们添加一个小伙伴到团队或一个新设备后配置文件就需要重新生成，但以后这些都交给 Xcode 自己处理吧。
+新 `PROVISIONING_PROFILE_SPECIFIER` 编译参数将摒弃以前通过 unique id 引用配置文件的方式，改为通过“TeamID + 配置文件名称”的方式去引用（在工程文件中保存为：PROVISIONING_PROFILE_SPECIFIER = "XXXXXXXXXX/ProvisionFileName"），这样做的好处是以前当我们添加一个小伙伴到团队或一个新设备后配置文件就需要重新生成，但以后这些都交给 Xcode 自己处理吧。
 
 ## 最佳实践
 
