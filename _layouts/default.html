@@ -40,6 +40,9 @@
 
     ga('create', '{{ site.google_analytics }}', 'auto');
     ga('send', 'pageview');
+
+    $(document).ready(function(){$("img").each(function(){var a=$(this),b=a.attr("src");
+      a.addClass("image");var c=$("<a/>").attr("href",b).attr("target","_blank");a.wrap(c)})});
   </script>
 </body>
 </html>
