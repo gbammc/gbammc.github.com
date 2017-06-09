@@ -99,7 +99,7 @@ end
 当我们在 School 中添加或删除记录时，sunpost 自动就会帮我们重新 reindex，但如果我们需要添加新的字段或不得不需要手动 reindex 时，可以使用如下指令：
 
 ``` ruby
-rake sunspot:redinex
+rake sunspot:reindex
 ```
 
 ---
