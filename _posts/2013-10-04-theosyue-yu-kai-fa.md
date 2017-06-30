@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "TheOS越狱开发"
+title: "TheOS 越狱开发"
 date: 2013-10-04 22:45
 comments: true
 categories: iOS 越狱开发

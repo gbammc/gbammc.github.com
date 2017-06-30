@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Solr和Sunspot全文索引使用方法和一般问题解决办法"
+title: "Solr 和 Sunspot 全文索引使用方法和一般问题解决办法"
 date: 2014-02-16 01:20
 comments: true
 categories: Rails Ruby
