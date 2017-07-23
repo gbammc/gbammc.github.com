@@ -270,6 +270,7 @@ em, i { font-style: italic; }
     margin-bottom: 20px;
     font-size: 1.6em;
     color: #111;
+    font-weight: 600;
 }
 
 
@@ -477,10 +478,11 @@ Post List
 }
 
 /* Post Page */
+/*
 #header {
     border-bottom: 1px solid #eee;
 }
-
+*/
 .post {
     margin: 80px 0 0 0;
     text-align: justify;
