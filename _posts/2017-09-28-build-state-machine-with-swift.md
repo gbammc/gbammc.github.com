@@ -40,7 +40,7 @@ enum Event: EventType {
 }
 ```
 
-我们的状态机可以先定义为：
+这样，我们的状态机可以先定义为：
 
 ```swift
 class StateMachine<S: StateType, E: EventType> {
@@ -50,9 +50,11 @@ class StateMachine<S: StateType, E: EventType> {
         self.currentState = initialState
     }
 }
+
+let stateMachine = StateMachine<State, Event>(.idle)
 ```
 
-在这个状态机初始化的时候需要先指定一个状态，并且当前状态对外是一个只读属性。
+在初始化的时候除了要指定状态和事件的具体类型外，还需要提供一个初始状态作为当前状态。
 
 接着为了处理事件发生，添加一个记录状态转移的方法：
 
@@ -90,7 +92,7 @@ private struct Operation<S: StateType, E: EventType> {
 private var routes = [S: [E: Operation<S, E>]]()
 ```
 
-那么记录状态转移的方法改为：
+记录状态转移的方法再改为：
 
 ```swift
 func listen(_ event: E, transit fromState: S, to toState: S, callback: @escaping (Transition<S, E>) -> Void) {
@@ -124,6 +126,10 @@ stateMachine.listen(.startWork, transit: .idle, to: .work) { (transition) in
 
 stateMachine.trigger(.startWork)
 ```
+
+可以看到，有限状态机的写法，逻辑清晰，表达力强，有利于封装事件。一个对象的状态越多、发生的事件越多，就越适合采用有限状态机的写法。
+
+总的行数不超过 60 行，完整的代码在[这里](https://gist.github.com/gbammc/3546ae3b52037756bc3065d9f1fc8f29)
 
 ## Reference
 
