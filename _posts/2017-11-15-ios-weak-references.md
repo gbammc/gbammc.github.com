@@ -14,7 +14,8 @@ description: 通过源码来学习 iOS 的设计
 
 ## OC 时代
 
-文中的源码来自 [objc4-723](https://opensource.apple.com/tarballs/objc4/) 版本。关于弱引用的实现主要在 ```objc-weak.h```、```objc-weak.m``` 和 ```NSObject.mm``` 这三个文件中。
+OC 的 ```__weak``` 关键字是随着 iOS5 新增的 ARC 特性而来。最早的实现出现在苹果开源的 [objc4-493.9](https://opensource.apple.com/tarballs/objc4/)。
+而文中的源码来自最新的 [objc4-723](https://opensource.apple.com/tarballs/objc4/) 版本。关于弱引用的实现主要在 ```objc-weak.h```、```objc-weak.mm``` 和 ```NSObject.mm``` 这三个文件中。
 
 ### 初始化
 
@@ -84,7 +85,7 @@ static id storeWeak(id *location, objc_object *newObj)
     } else {
         newTable = nil;
     }
-    
+
     // 加锁
     SideTable::lockTwo<haveOld, haveNew>(oldTable, newTable);
 
@@ -101,8 +102,8 @@ static id storeWeak(id *location, objc_object *newObj)
     if (haveNew  &&  newObj) {
         // 获得新值的 isa 类
         Class cls = newObj->getIsa();
-        if (cls != previouslyInitializedClass  &&  
-            !((objc_class *)cls)->isInitialized()) 
+        if (cls != previouslyInitializedClass  &&
+            !((objc_class *)cls)->isInitialized())
         {
             // 新值 isa 非空，并且未初始化，
             // 解锁
@@ -115,7 +116,7 @@ static id storeWeak(id *location, objc_object *newObj)
             // 很显然会处于一个正在初始化，但未初始化完的状态，
             // 所以设置 previouslyInitializedClass 为这个类进行标记
             previouslyInitializedClass = cls;
-            
+
             // 重试
             goto retry;
         }
@@ -131,7 +132,7 @@ static id storeWeak(id *location, objc_object *newObj)
     if (haveNew) {
         // 把弱引用的地址注册到 newOjb 的弱引用条目
         newObj = (objc_object *)
-            weak_register_no_lock(&newTable->weak_table, (id)newObj, location, 
+            weak_register_no_lock(&newTable->weak_table, (id)newObj, location,
                                   crashIfDeallocating);
 
         // 如果 weakStore 操作应该被拒绝，weak_register_no_lock 会返回 nil，否则
@@ -139,13 +140,13 @@ static id storeWeak(id *location, objc_object *newObj)
         if (newObj  &&  !newObj->isTaggedPointer()) {
             newObj->setWeaklyReferenced_nolock();
         }
-        
+
         *location = (id)newObj;
     }
     else {
         // 没有新值，不用更改
     }
-    
+
     SideTable::unlockTwo<haveOld, haveNew>(oldTable, newTable);
 
     return (id)newObj;
@@ -163,7 +164,7 @@ struct SideTable {
     spinlock_t slock;			// 用于原子操作的自旋锁
     RefcountMap refcnts;		// 引用计数哈希表
     weak_table_t weak_table;	// weak 表
-    
+
     // ...
 };
 ```
@@ -194,25 +195,25 @@ reinterpret_cast <new_type> (expression)
 template<typename T>
 class StripedMap {
 	// ...
-	
+
 	// 嵌入式系统的 StripeCount 为 8，iOS 上为 64
 	enum { StripeCount = 64 };
-	
+
 	static unsigned int indexForPointer(const void *p) {
         uintptr_t addr = reinterpret_cast<uintptr_t>(p);
-        
+
         // 哈希操作
         return ((addr >> 4) ^ (addr >> 9)) % StripeCount;
 	}
-	
+
 public:
-    T& operator[] (const void *p) { 
-        return array[indexForPointer(p)].value; 
+    T& operator[] (const void *p) {
+        return array[indexForPointer(p)].value;
     }
-    const T& operator[] (const void *p) const { 
-        return const_cast<StripedMap<T>>(this)[p]; 
+    const T& operator[] (const void *p) const {
+        return const_cast<StripedMap<T>>(this)[p];
     }
-	
+
 	// ...
 }
 ```
@@ -255,7 +256,7 @@ struct weak_entry_t {
             weak_referrer_t  inline_referrers[WEAK_INLINE_COUNT];
         };
     };
-    
+
     // ...
 };
 ```
@@ -267,12 +268,12 @@ struct weak_entry_t {
 OC 的弱引用变量 zeroing 发生在目标对象的释放时候。在对象的 ```dealloc``` 过程中会调用 ```weak_clear_no_lock``` 函数：
 
 ```  c
-/** 
- * Called by dealloc; nils out all weak pointers that point to the 
+/**
+ * Called by dealloc; nils out all weak pointers that point to the
  * provided object so that they can no longer be used.
  */
-void 
-weak_clear_no_lock(weak_table_t *weak_table, id referent_id) 
+void
+weak_clear_no_lock(weak_table_t *weak_table, id referent_id)
 {
     objc_object *referent = (objc_object *)referent_id;
 
@@ -281,20 +282,20 @@ weak_clear_no_lock(weak_table_t *weak_table, id referent_id)
     if (entry == nil) {
         return;
     }
-    
+
     weak_referrer_t *referrers;
     size_t count;
-    
+
     // 获取弱引用变量地址数组和数目
     if (entry->out_of_line()) {
         referrers = entry->referrers;
         count = TABLE_SIZE(entry);
-    } 
+    }
     else {
         referrers = entry->inline_referrers;
         count = WEAK_INLINE_COUNT;
     }
-    
+
     // 把它们全置为 nil
     for (size_t i = 0; i < count; ++i) {
         objc_object **referrer = referrers[i];
@@ -306,13 +307,13 @@ weak_clear_no_lock(weak_table_t *weak_table, id referent_id)
                 _objc_inform("__weak variable at %p holds %p instead of %p. "
                              "This is probably incorrect use of "
                              "objc_storeWeak() and objc_loadWeak(). "
-                             "Break on objc_weak_error to debug.\n", 
+                             "Break on objc_weak_error to debug.\n",
                              referrer, (void*)*referrer, (void*)referent);
                 objc_weak_error();
             }
         }
     }
-    
+
     // 移除整个条目
     weak_entry_remove(weak_table, entry);
 }
@@ -345,7 +346,7 @@ struct HeapObject {
   HeapObject() = default;
 
   // Initialize a HeapObject header as appropriate for a newly-allocated object.
-  constexpr HeapObject(HeapMetadata const *newMetadata) 
+  constexpr HeapObject(HeapMetadata const *newMetadata)
     : metadata(newMetadata)
     , refCounts(InlineRefCounts::Initialized)
   { }
@@ -449,7 +450,7 @@ void swift::swift_weakRelease(HeapObject *object) {
       atomic<SideTableRefCountBits> {
         strong RC + unowned RC + weak RC + flags
       }
-    }   
+    }
   }
 ```
 
