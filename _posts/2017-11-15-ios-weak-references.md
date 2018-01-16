@@ -8,7 +8,7 @@ keywords: ios,swift,weak,reference,objective-c,oc,
 description: 通过源码来学习 iOS 的设计
 ---
 
-用引用计数进行内存管理，必然会发生“循环引用”的问题，为了正确打破对象间相互引用的关系，我们一般的方法都是使用 ```weak``` 作为工具。通过 ```weak``` 修饰符表示的弱引用除了不会增加对象的引用计数外，另一个好处是，当引用的对象被释放后，这个弱引用会自动失效并且处于 nil 的的状态（zeroing）。
+用引用计数进行内存管理，必然会发生“循环引用”的问题，为了正确打破对象间相互引用的关系，我们一般的方法都是使用 ```weak``` 作为工具。通过 ```weak``` 修饰符表示的弱引用除了不会增加对象的引用计数外，另一个好处是，当引用的对象被释放后，这个弱引用会自动失效并且处于 nil 的状态（zeroing）。
 
 以下就来尝试分析苹果对 Objective-C 和 Swift 分别的实现原理。
 
@@ -217,9 +217,9 @@ public:
 }
 ```
 
-在实现中，```StripedMap``` 新定义了数组运算符，传入对象的地址即可通过哈希算法获得对应内容。从原有的注释可以看到，在 Runtime 初始化后，iOS 系统就生成了 64 个 ```SideTable``` 留作以后的使用。
+在实现中，```StripedMap``` 重定义了数组运算符，传入对象的地址即可通过哈希算法获得对应内容。从原有的注释可以看到，在 Runtime 初始化后，iOS 系统就生成了 64 个 ```SideTable``` 留作以后的使用。
 
-```SideTable``` 里与弱引用有直接关系的就是 weak 表。weak 表也是作为哈希表实现，将目标对象的地址作为键值进行检索，去获取对应的弱引用变量地址。另外，由于一个对象可同时赋值给多个弱引用变量，所以对于一个键值，可注册多个弱引用变量的地址。
+```SideTable``` 里与弱引用有直接关系的就是 weak 表。weak 表也是作为哈希表实现，将目标对象的地址作为键值进行检索以获取对应的弱引用变量地址。另外，由于一个对象可同时赋值给多个弱引用变量，所以对于一个键值，可注册多个弱引用变量的地址。
 
 ``` c
 struct weak_table_t {
@@ -326,11 +326,11 @@ weak_clear_no_lock(weak_table_t *weak_table, id referent_id)
 2. ```weak_table_t``` 开放地址法哈希搜索一次；
 3. ```weak_entry_t``` 同样是开放地址法哈希再搜索一次。
 
-无论怎么看都不是简单的操作。不过一般情况下应该也用不到很多的弱引用。
+整套操作下来也不简单，但考虑到 iOS 5 那时的可用内存还是挺少的，估计为了能立刻回收释放的内存，苹果就选择这种时间换空间的方式来实现了。
 
 ## Swift4 之前的实现
 
-接着我们来看 Swift 里的实现。在 Swift 的运行时里，被分配到堆上的对象都是一个 ```HeapObject``` 类型：
+接着我们来看 Swift 里的实现。在 Swift 的运行时里，被分配到堆上的对象都是 ```HeapObject``` 类型：
 
 ``` swift
 /// The Swift heap-object header.
@@ -359,7 +359,6 @@ struct HeapObject {
 #define SWIFT_HEAPOBJECT_NON_OBJC_MEMBERS       \
       StrongRefCount refCount;                  \
       WeakRefCount weakRefCount
-
 ```
 
 强弱引用计数都是这么直接的定义在里面了！可能是 Swift 的开发团队也意识到 OC 的实现方法已经相当过时和低效，从而重新设计了整套机制。新的实现里弱引用变量就是一个只存有目标对象地址的结构体。
@@ -368,7 +367,6 @@ struct HeapObject {
 struct WeakReference {
   uintptr_t Value;
 };
-
 ```
 
 初始化一个弱引用变得很直接，只是单纯地把目标对象的地址记录起来。
@@ -380,7 +378,7 @@ void swift::swift_weakInit(WeakReference *ref, HeapObject *value) {
 }
 ```
 
-所以当需要把目标对象加载出来也很简单。下面的方法是 2015 年的[实现](https://github.com/apple/swift/blob/swift-2.2-SNAPSHOT-2015-12-01-b/stdlib/public/runtime/HeapObject.cpp#L636)（升级到 Swift4 之前只是为了处理多线程的情况而把一些存取操作换成了原子操作，基本意思还是这样）。
+所以当需要把目标对象加载出来也很简单。下面的方法是 2015 年的[实现](https://github.com/apple/swift/blob/swift-2.2-SNAPSHOT-2015-12-01-b/stdlib/public/runtime/HeapObject.cpp#L636)（升级到 Swift4 之前只是为了处理多线程的情况而把一些存取操作换成了原子操作，基本意思还是一样）。
 
 ``` c
 HeapObject *swift::swift_weakLoadStrong(WeakReference *ref) {
@@ -395,9 +393,9 @@ HeapObject *swift::swift_weakLoadStrong(WeakReference *ref) {
 }
 ```
 
-上面几行除了有加载对象的作用外，我们也能清楚 Swift 里的 zeroing 是怎么工作了：加载一个弱引用时，如果目标对象正在被释放，那就置空这个引用，否则就尝试 retain 并且返回这对象。
+Swift 的 zeroing 就是发生在访问弱引用的时候，如果目标对象正在被释放（已经被析构，但还没释放），那就置空这个引用，否则就尝试 retain 并且返回这对象。
 
-接着看到 ```swift_weakRelease``` 函数：
+再来看 ```swift_weakRelease``` 函数：
 
 ``` c
 void swift::swift_weakRelease(HeapObject *object) {
@@ -415,18 +413,21 @@ void swift::swift_weakRelease(HeapObject *object) {
 }
 ```
 
-当对象的弱引用数减少到需要释放的时候，这才把对象真正的内存给释放出来。
+只有当对象的弱引用数减少到为零时，这才把对象的内存真正给释放出来。
 
 ### 小结
 
-在 Swift 里苹果把弱引用的实现简化了，弱引用变量只保存指向目标对象的地址，并通过对象內的弱引用计数进行内存管理。并且 Swift 把对象的析构和释放时机进行了解耦，所以对象可以处于一种已经被析构但还没释放的状态。
+1. 在 Swift 里苹果把弱引用的实现简化了，弱引用变量只保存指向目标对象的地址，并通过对象內的弱引用计数进行内存管理。
+2. Swift 把对象的析构和释放时机进行了解耦，析构发生在强引用数为零时，只有强弱引用数都为零才会释放。
+3. 使用弱引用时，runtime 会检查目标对象的状态，如果已经析构了就会执行 zeroing 操作。
 
 ## Swift4 后
 
-虽然上面的实现利用空间换时间的方法简化了弱引用的实现和提高了存取效率，但却有一个很大的问题。如果对象的弱引用数一直不为零，那么对象就不会真正被释放。如果对象占据的空间很大的话，也是对内存造成浪费。所以在 Swift4 以后，苹果再次加入 ```SideTable``` 的机制。
+虽然上面的方法简化了弱引用的实现和提高了存取效率，但却有一个很大的问题。如果对象的弱引用数一直不为零，那么对象占用的剩余内存就不会完全释放。这些死而不僵的对象还占用很多空间的话，累积起来也是对内存造成浪费。所以在 Swift4 以后，苹果再次加入 ```SideTable``` 的机制。
 
-不过此 ```SideTable``` 跟 OC 的 ```SideTable``` 不一样，系统不再是把它作为全局对象使用了。
-新的 ```SideTable``` 是针对每一个有需要的对象而创建，系统会为该对象分配一块新的内存来保存该对象额外的信息。因为这不是对象必须的内容，所以这个 ```SideTable``` 可有可无。对象会有一个指向 ```SideTable``` 的指针，同时 ```SideTable``` 也有一个指回原对象的指针。为了把对象里的这个指针空间也省下来，目前只有在创建弱引用时，会把对象的引用计数放到新创建的 ```SideTable``` 去，再把本来存放引用计数的空间改为 ```SideTable``` 的地址，runtime 会通过一个标志位来区分对象是否有 ```SideTable```。在 [RefCount.h](https://github.com/apple/swift/blob/c262440e70896299118a0a050c8a834e1270b606/stdlib/public/SwiftShims/RefCount.h#L87-L107) 文件的注释里，Swift 开发团队已经清晰的写了：
+不过此 ```SideTable``` 跟 OC 的 ```SideTable``` 不一样，系统不再是把它作为全局对象使用。
+
+新的 ```SideTable``` 是针对有需要的对象而创建，系统会为目标对象分配一块新的内存来保存该对象额外的信息。 因为这不是对象必须的内容，所以这个 ```SideTable``` 可有可无。对象会有一个指向 ```SideTable``` 的指针，同时 ```SideTable``` 也有一个指回原对象的指针。在实现上为了不额外多占用内存，目前只有在创建弱引用时，会先把对象的引用计数放到新创建的 ```SideTable``` 去，再把空出来的空间存放 ```SideTable``` 的地址，而 runtime 会通过一个标志位来区分对象是否有 ```SideTable```。在 [RefCount.h](https://github.com/apple/swift/blob/c262440e70896299118a0a050c8a834e1270b606/stdlib/public/SwiftShims/RefCount.h#L87-L107) 文件的注释里，Swift 开发团队也已经清晰地写了：
 
 ```
   Storage layout:
@@ -452,7 +453,7 @@ void swift::swift_weakRelease(HeapObject *object) {
   }
 ```
 
-这样做的好处是，不但解决了上面的问题，而且还能继续使用 Swift 的弱引用机制，只不过现在弱引用变量指向的是对象的 ```SideTable```。最后，```SideTable``` 的实现也为以后加入更多特性提供了方便。
+虽然这些 ```SideTable``` 还是得等到最后一个弱引用被访问时才会释放，不过这样就大大缓解了内存浪费的问题，而且还能继续沿用 Swift 的弱引用机制，只不过现在弱引用变量指向的是对象的 ```SideTable```。最后，```SideTable``` 的实现也为以后加入更多特性提供了方便。
 
 ## 总结
 
