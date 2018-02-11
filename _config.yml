@@ -8,7 +8,7 @@ markdown: kramdown
 highlighter: rouge
 
 paginate: 10
-baseurl: /
+baseurl: /gbammc.github.com
 domain_name: 'http://alvinzhu.me'
 google_analytics: 'UA-44493661-1'
 disqus: true
@@ -22,7 +22,7 @@ author:         'Alvin Zhu'
 authorTwitter:  'alvin_zhu'
 authorWeibo:    '877731681'
 
-permalink: /blog/:year/:month/:day/:title/
+# permalink: /blog/:year/:month/:day/:title/
 
 defaults:
   -
