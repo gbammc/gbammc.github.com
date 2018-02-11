@@ -8,7 +8,7 @@ markdown: kramdown
 highlighter: rouge
 
 paginate: 10
-baseurl: /gbammc.github.com
+baseurl: /
 domain_name: 'http://alvinzhu.me'
 google_analytics: 'UA-44493661-1'
 disqus: true
