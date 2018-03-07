@@ -12,7 +12,7 @@ description: WWDC 2016 Session 406 笔记
 
 ## Mach-O
 
-首先，App 的可执行文件是属于 [Mach-O](https://en.wikipedia.org/wiki/Mach-O) 格式的，这是一种用于记录可执行文件、对象代码、共享库、动态加载代码和内存转储的文件格式。Mach-O 文件一般都有一个 ```Header``` ，各种 ```Load Commands``` 以及多个  ```Segment```。其中每个  ```Segment``` 有固定的 page size，64 位系统是 16KB，而其他的都是 4KB。一个可执行文件通常都有以下  ```Segment```：```__PAGEZERO```，```__TEXT```，```__DATA```，```__LINKEDIT```。在每个 ```Segment``` 中又有多个  ```Section```。
+首先，App 的可执行文件是属于 [Mach-O](https://en.wikipedia.org/wiki/Mach-O) 格式的，这是一种用于记录可执行文件、对象代码、共享库、动态加载代码和内存转储的文件格式。Mach-O 文件一般都有一个 ```Header``` ，包含各种 ```Load Commands``` 以及多个  ```Segment```。其中每个  ```Segment``` 有固定的 page size，64 位系统是 16KB，而其他的都是 4KB。一个可执行文件通常都有以下  ```Segment```：```__PAGEZERO```，```__TEXT```，```__DATA```，```__LINKEDIT```。在每个 ```Segment``` 中又有多个  ```Section```。
 
 安装 Xcode 后可以用命令行工具 ```xcrun``` 调用其他工具查看 Mach-O 信息，只是想简单的查看或编辑的话更推荐有 GUI 界面的 [MachOView](https://sourceforge.net/projects/machoview/)。
 
@@ -188,7 +188,7 @@ Binding 负责处理指向 dylib 外部的指针。
 
 这一步做的是动态对 ```__Data``` 段作修正。
 
-OC 的 ```+load```（建议改用 ```+initialize```） 方法可以像 C++ 的初始化器（initializer）执行一些初始化工作。因为之前的依赖关系，dyld 将会按照自底向上（bottom up）的顺序依次执行初始化器,确保加载某个 dylib 前，依赖的其余 dylib 肯定已经被预先加载。
+OC 的 ```+load```（建议改用 ```+initialize```） 方法可以像 C++ 的初始化器（initializer）执行一些初始化工作。因为之前的依赖关系，dyld 将会按照自底向上（bottom up）的顺序依次执行初始化器，确保加载某个 dylib 前，依赖的其余 dylib 肯定已经被预先加载。
 
 最后 dyld 会调用 main() 函数。
 
@@ -209,7 +209,7 @@ OC 的 ```+load```（建议改用 ```+initialize```） 方法可以像 C++ 的�
 
 冷启动耗时需要重启设备才能测量，而且明显冷启动耗时要比暖启动多，所以前者的数据更为重要。
 
-### Dylib oading 优化
+### Dylib loading 优化
 
 上文已经提到系统 dylib 的加载已经被优化过，不过内嵌的（embedded）dylib 仍然很占用时间。另外，虽然可以用 ```dlopen()``` 方法实现懒加载，但实际上这会带来一些问题，而且总的消耗也更多。
 
