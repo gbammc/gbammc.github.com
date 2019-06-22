@@ -14,7 +14,7 @@ google_analytics: 'UA-44493661-1'
 disqus: true
 disqus_shortname: 'alvinzhusblog'
 
-gems: [jekyll-paginate]
+plugins: [jekyll-paginate]
 
 # Details for the RSS feed generator
 url:            'http://localhost:4000'

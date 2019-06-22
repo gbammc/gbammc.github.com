@@ -44,8 +44,8 @@ html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abb
 
 /* Spacing */
 .post h1, h3, h4, h5, p, .post-body ul, #post-list li, pre {
-    margin-top: 20px;
-    margin-bottom: 20px;
+    margin-top: 25px;
+    margin-bottom: 25px;
 }
 
 #post-list li {
@@ -57,8 +57,8 @@ html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abb
 html, body { height: 100%; }
 
 body {
-    font-family: "Classic Grotesque W01", "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, "Hiragino Sans GB", "PingFang SC", "Heiti SC", "Microsoft YaHei UI", "Microsoft YaHei", "Source Han Sans", sans-serif;
-    font: 16px/1.6 "Classic Grotesque W01", "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, "Hiragino Sans GB", "PingFang SC", "Heiti SC", "Microsoft YaHei UI", "Microsoft YaHei", "Source Han Sans", sans-serif;
+    font-family: "Source Han Sans CN", "Classic Grotesque W01", "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, "Hiragino Sans GB", "PingFang SC", "Heiti SC", "Microsoft YaHei UI", "Microsoft YaHei", "Source Han Sans", sans-serif;
+    font: 15px/1.5 "Source Han Sans CN", "Classic Grotesque W01", "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, "Hiragino Sans GB", "PingFang SC", "Heiti SC", "Microsoft YaHei UI", "Microsoft YaHei", "Source Han Sans", sans-serif;
     color: #666;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -108,7 +108,7 @@ h2 {
     font-size: 16px;
     font-weight: 300;
     color: #aaa;
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: "Source Han Sans CN", 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-style: normal;
     margin-top: 0.5em;
 }
@@ -195,7 +195,7 @@ ol {
     list-style-type: decimal !ie; /*IE 7- hack*/
 
     margin: 0;
-    margin-left: 3em;
+    margin-left: 2em;
     padding: 0;
 
     counter-reset: li-counter;
@@ -219,7 +219,7 @@ ol > li:before {
 }
 
 /* Line Height */
-#post-body, p { line-height:1.7; }
+#post-body, p { line-height:1.8; }
 
 b, strong { font-weight: 500;
   color: #1E2025; }
@@ -330,7 +330,7 @@ hr {
 span.code {
     background-color: #e8f2fb;
     border: 1px solid #c9e1f6;
-    padding: .1em .4em;
+    padding: .0625em .4em;
     border-radius: 3px;
     font-size: 1em;
     font-family: Consolas, Menlo, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace, serif;
@@ -345,12 +345,16 @@ pre {
     line-height: 1.5em;
 
     background-color: #e8f2fb;
-    border: 1px solid #c9e1f6;
+    /* border: 1px solid #c9e1f6; */
     border-radius: 3px;
     font-size: 13px;
     font-family: Consolas, Menlo, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace, serif;
     vertical-align: baseline;
     word-wrap: break-word;
+}
+
+pre code {
+    white-space: pre;
 }
 
 table {
@@ -704,3 +708,6 @@ h2.month {
     .post h1 { font-size:24px; }
     .post h2 { font-size:20px; }
 }
+
+/* Image */
+img[alt=oc_weak] { width: 420px; }

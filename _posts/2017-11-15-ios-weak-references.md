@@ -8,9 +8,9 @@ keywords: ios,swift,weak,reference,objective-c,oc,
 description: 通过源码来学习 iOS 的设计
 ---
 
-用引用计数进行内存管理，必然会发生“循环引用”的问题，为了正确打破对象间相互引用的关系，我们一般的方法都是使用 ```weak``` 作为工具。通过 ```weak``` 修饰符表示的弱引用除了不会增加对象的引用计数外，另一个好处是，当引用的对象被释放后，这个弱引用会自动失效并且处于 nil 的状态（zeroing）。
+通过引用计数进行内存管理，必然会存在“循环引用”的问题，为了打破对象间相互引用的关系，我们一般是使用 ```weak``` 作为解决手段。被 ```weak``` 修饰符修饰的弱引用除了不会增加对象的引用计数外，另一个好处是，当引用的对象被释放后，这个弱引用会自动失效并且置为 nil（zeroing）。
 
-以下就来尝试分析苹果对 Objective-C 和 Swift 分别的实现原理。
+以下就来尝试分析苹果在 OC 和 Swift 的实现原理。
 
 ## OC 时代
 
@@ -38,8 +38,8 @@ objc_initWeak(&weakPtr, o);
 ``` c
 id objc_initWeak(id *location, id newObj)
 {
-	// 查看对象是否有效
-	// 无效对象立刻使指针置空
+    // 查看对象是否有效
+    // 无效对象立刻使指针置空
     if (!newObj) {
         *location = nil;
         return nil;
@@ -50,7 +50,7 @@ id objc_initWeak(id *location, id newObj)
 }
 ```
 
-可以看到，这个函数最后会调用 ```storeWeak()```，而且传入的三个[非类型模板参数](https://msdn.microsoft.com/zh-cn/library/x5w1yety.aspx#非类型模板参数)的名字很好地解释了它们的意义：弱引用不存在已有指向对象（```DontHaveOld```），但需要指向新的对象（```DoHaveNew```），如果目标对象正在释放，那就崩溃吧（```DoCrashIfDeallocating```）。
+可以看到，这个函数最后会调用 ```storeWeak()```，传入的三个[非类型模板参数](https://msdn.microsoft.com/zh-cn/library/x5w1yety.aspx#非类型模板参数)的名字很好地解释了它们的意义：该弱引用不存在已有指向对象（```DontHaveOld```），但需要指向新的对象（```DoHaveNew```），如果目标对象正在释放，那就崩溃吧（```DoCrashIfDeallocating```）。
 
 再来看一下 ```storeWeak()``` 的实现：
 
@@ -90,17 +90,17 @@ static id storeWeak(id *location, objc_object *newObj)
     SideTable::lockTwo<haveOld, haveNew>(oldTable, newTable);
 
     if (haveOld  &&  *location != oldObj) {
-   		// 线程冲突处理，
-   		// 如果有旧值，但 location 指向的对象不为 oldObj，那很可能被其它线程修改过，
-   		// 解锁并重试
+        // 线程冲突处理，
+        // 如果有旧值，但 location 指向的对象不为 oldObj，那很可能被其它线程修改过，  
+        // 解锁并重试
         SideTable::unlockTwo<haveOld, haveNew>(oldTable, newTable);
         goto retry;
     }
 
-    // 确保新值的 isa 类已经调用 +initialize 初始化，
+    // 确保新值的 isa 已经调用 +initialize 初始化，
     // 避免弱引用机制和 +initialize 机制间的死锁
     if (haveNew  &&  newObj) {
-        // 获得新值的 isa 类
+        // 获得新值的 isa
         Class cls = newObj->getIsa();
         if (cls != previouslyInitializedClass  &&
             !((objc_class *)cls)->isInitialized())
@@ -111,7 +111,7 @@ static id storeWeak(id *location, objc_object *newObj)
             // 初始化 isa
             _class_initialize(_class_getNonMetaClass(cls, (id)newObj));
 
-            // 如果这个 isa 类正在当前线程运行 +initialize
+            // 如果这个 isa 正在当前线程运行 +initialize
             //（例如在 +initialize 方法里对自己的实例调用了 storeWeak ），
             // 很显然会处于一个正在初始化，但未初始化完的状态，
             // 所以设置 previouslyInitializedClass 为这个类进行标记
@@ -153,29 +153,29 @@ static id storeWeak(id *location, objc_object *newObj)
 }
 ```
 
-可以看到，很多操作都需要对 ```SideTable``` 的实例进行操作。实际上 ```SideTable``` 也的确是作为全局对象用于管理所有对象的引用计数和 weak 表，在 Runtime 启动时就和主线程的 AutoreleasePool 一同创建。
+可以看到，很多操作都需要对 ```SideTable``` 的实例进行操作。实际上 ```SideTable``` 也是作为全局对象用于管理所有对象的引用计数和 weak 表，在 runtime 启动时就和主线程的 AutoreleasePool 一同创建。
 
-### SideTable
+### SideTable 以及 weak 表
 
 SideTable 的定义如下：
 
 ``` c
 struct SideTable {
-    spinlock_t slock;			// 用于原子操作的自旋锁
-    RefcountMap refcnts;		// 引用计数哈希表
-    weak_table_t weak_table;	// weak 表
+    spinlock_t slock;           // 用于原子操作的自旋锁
+    RefcountMap refcnts;        // 引用计数哈希表
+    weak_table_t weak_table;    // weak 表
 
     // ...
 };
 ```
 
-从 ```storeWeak()``` 可以看到，Runtime 是通过以下方式获取对象的 ```SideTable```：
+从 ```storeWeak()``` 可以看到，runtime 是通过以下方式获取对象的 ```SideTable```：
 
 ```
 objSideTable = &SideTables()[obj];
 ```
 
-这个 ```SideTables()``` 方法返回的就是一个 ```StripedMap``` 的哈希表，以对象的地址作为键值返回对应的 ```SideTable```。
+这个 ```SideTables()``` 方法返回的是一个 ```StripedMap``` 哈希表，以对象的地址作为键值返回对应的 ```SideTable```。
 
 ```
 static StripedMap<SideTable>& SideTables() {
@@ -183,7 +183,7 @@ static StripedMap<SideTable>& SideTables() {
 }
 ```
 
-```reinterpret_cast``` 是C++标准转换运算符，用来处理无关类型之间的转换，它会产生一个新的值，这个值会有与原始参数（expressoin）有完全相同的比特位。
+```reinterpret_cast``` 是 C++ 标准转换运算符，用来处理无关类型之间的转换，它会产生一个新的值，这个值会有与原始参数（expressoin）有完全相同的比特位。
 
 ``` c
 reinterpret_cast <new_type> (expression)
@@ -194,17 +194,17 @@ reinterpret_cast <new_type> (expression)
 ```
 template<typename T>
 class StripedMap {
-	// ...
+    // ...
 
-	// 嵌入式系统的 StripeCount 为 8，iOS 上为 64
-	enum { StripeCount = 64 };
+    // 嵌入式系统的 StripeCount 为 8，iOS 上为 64
+    enum { StripeCount = 64 };
 
-	static unsigned int indexForPointer(const void *p) {
+    static unsigned int indexForPointer(const void *p) {
         uintptr_t addr = reinterpret_cast<uintptr_t>(p);
 
         // 哈希操作
         return ((addr >> 4) ^ (addr >> 9)) % StripeCount;
-	}
+    }
 
 public:
     T& operator[] (const void *p) {
@@ -214,11 +214,11 @@ public:
         return const_cast<StripedMap<T>>(this)[p];
     }
 
-	// ...
+    // ...
 }
 ```
 
-在实现中，```StripedMap``` 重定义了数组运算符，传入对象的地址即可通过哈希算法获得对应内容。从原有的注释可以看到，在 Runtime 初始化后，iOS 系统就生成了 64 个 ```SideTable``` 留作以后的使用。
+在实现中，```StripedMap``` 重定义了数组运算符，传入对象的地址即可通过哈希算法获得对应内容。从原有的注释可以看到，在 runtime 初始化后，iOS 系统就生成了 64 个 ```SideTable``` 留作以后的使用。
 
 ```SideTable``` 里与弱引用有直接关系的就是 weak 表。weak 表也是作为哈希表实现，将目标对象的地址作为键值进行检索以获取对应的弱引用变量地址。另外，由于一个对象可同时赋值给多个弱引用变量，所以对于一个键值，可注册多个弱引用变量的地址。
 
@@ -265,7 +265,7 @@ struct weak_entry_t {
 
 ### zeroing
 
-OC 的弱引用变量 zeroing 发生在目标对象的释放时候。在对象的 ```dealloc``` 过程中会调用 ```weak_clear_no_lock``` 函数：
+OC 的弱引用变量 zeroing 发生在目标对象释放的时候。在对象的 ```dealloc``` 过程中会调用 ```weak_clear_no_lock``` 函数：
 
 ```  c
 /**
@@ -321,13 +321,16 @@ weak_clear_no_lock(weak_table_t *weak_table, id referent_id)
 
 ### 小结
 
+![oc_weak](https://i.loli.net/2019/06/22/5d0e292d3e5a211977.png)
+
+
 可以看到，不论是存放或是加载一个弱应用变量都需要：
 
-1. ```SideTable``` 哈希搜索一次；
-2. ```weak_table_t``` 开放地址法哈希搜索一次；
-3. ```weak_entry_t``` 同样是开放地址法哈希再搜索一次。
+1. 哈希搜索 ```SideTable``` 一次；
+2. 开放地址法哈希搜索 ```weak_entry_t``` 一次；
+3. 同样是开放地址法哈希再搜索 ```weak_referer_t``` 一次。
 
-整套操作下来也不简单，但考虑到 iOS 5 那时的可用内存还是挺少的，估计为了能立刻回收释放的内存，苹果就选择这种时间换空间的方式来实现了。
+整套操作下来也不简单，但考虑到 iOS5 那时的可用内存还是挺少的，估计为了能立刻回收释放的内存，苹果就选择这种时间换空间的方式来实现了。
 
 ## Swift4 之前的实现
 
@@ -362,7 +365,9 @@ struct HeapObject {
       WeakRefCount weakRefCount
 ```
 
-强弱引用计数都是这么直接的定义在里面了！可能是 Swift 的开发团队也意识到 OC 的实现方法已经相当过时和低效，从而重新设计了整套机制。新的实现里弱引用变量就是一个只存有目标对象地址的结构体。
+强弱引用计数都是这么直接的定义在里面了！可能是 Swift 的开发团队也意识到 OC 的实现方法已经相当过时和低效，从而重新设计了整套机制。
+
+新的实现里弱引用变量就是一个只存有目标对象地址的结构体。
 
 ``` c
 struct WeakReference {
@@ -414,7 +419,7 @@ void swift::swift_weakRelease(HeapObject *object) {
 }
 ```
 
-只有当对象的弱引用数减少到为零时，这才把对象的内存真正给释放出来。
+只有当对象的弱引用数减少到为零时，这才调用 ```swift_slowDealloc``` 把对象的内存给真正释放出来。
 
 ### 小结
 
