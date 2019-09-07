@@ -1,6 +1,6 @@
 name: Alvin Zhu
 description: "Nothing is true, everything is permitted"
-keywords: iOS, web, css, html, ruby, cocoa, web development
+keywords: iOS, swift, javascript, web, css, html, ruby, cocoa, web development
 
 aboutPage: true
 
@@ -8,9 +8,9 @@ markdown: kramdown
 highlighter: rouge
 
 paginate: 10
-baseurl: /
+baseurl: 
 domain_name: 'http://alvinzhu.me'
-google_analytics: 'UA-44493661-1'
+# google_analytics: 'UA-44493661-1'
 disqus: true
 disqus_shortname: 'alvinzhusblog'
 

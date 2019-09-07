@@ -85,10 +85,10 @@ struct Transition<S: StateType, E: EventType> {
 
 ```swift
 private struct Operation<S: StateType, E: EventType> {
-        let transition: Transition<S, E>
-        let triggerCallback: (Transition<S, E>) -> Void
-    }
-    
+    let transition: Transition<S, E>
+    let triggerCallback: (Transition<S, E>) -> Void
+}
+   
 private var routes = [S: [E: Operation<S, E>]]()
 ```
 

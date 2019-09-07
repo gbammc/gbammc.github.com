@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Cocoa开发--事件监听"
+title: "Cocoa开发 -- 事件监听"
 date: 2013-11-05 21:45
 comments: true
 categories: Mac

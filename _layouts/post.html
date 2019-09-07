@@ -18,7 +18,6 @@ archive: true
         <img class="avatar" src="{{ site.baseurl }}/assets/images/avatar.png">
         <div>
             <span class="dark">{{ site.author }}</span>
-            <span>{{ site.description }}</span>
         </div>
     </a>
 </footer>
@@ -26,7 +25,6 @@ archive: true
 <!-- Disqus comments -->
 {% if site.disqus %}
     <div class="archive readmore">
-        <h3>Comments</h3>
         {% include disqus.html %}
     </div>
 {% endif %}
@@ -34,7 +32,6 @@ archive: true
 <!-- Archive post list -->
 {% if page.archive %}
     <ul id="post-list" class="archive readmore">
-        <h3>Read more</h3>
         {% for post in site.posts %}
             <li>
                 <a href="{{ site.baseurl }}{{ post.url | remove_first: '/' }}">{{ post.title }}<aside class="dates">{{ post.date | date:"%b %d" }}</aside></a>
