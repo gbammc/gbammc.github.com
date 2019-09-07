@@ -49,8 +49,7 @@ html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abb
 }
 
 #post-list li {
-    margin-top: 2em;
-    margin-bottom: 2em;
+    margin-top: 3em;
 }
 
 /* Base */
@@ -431,7 +430,7 @@ Post List
 }
 
 #post-list li+li {
-    padding-top: 2em;
+    padding-top: 3em;
     border-top: 1px solid #eee;
 }
 

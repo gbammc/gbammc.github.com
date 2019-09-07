@@ -3,7 +3,7 @@
         <a href="{{ site.baseurl }}/"> <span class="arrow">←</span> Home </a>
     {% endif %}
 
-    {% if page.url != "/about/" %}
+    {% if page.url == "/" %}
         {% if site.aboutPage %}
             <a href="{{ site.baseurl }}/about">About </a>
         {% endif %}
