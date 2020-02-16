@@ -193,8 +193,7 @@ ol {
     list-style-type: none;
     list-style-type: decimal !ie; /*IE 7- hack*/
 
-    margin: 0;
-    margin-left: 2em;
+    margin: 0 0 25px 2em;
     padding: 0;
 
     counter-reset: li-counter;
@@ -295,8 +294,8 @@ em, i { font-style: italic; }
 h3, h4, h5 { color:#333; }
 
 h3 { font-size:19px; font-weight: 400; }
-h4 { font-size:16px; font-weight:bold; }
-h5 { font-size:15px; font-weight: bold; }
+h4 { font-size:16px }
+h5 { font-size:15px }
 
 h6 {
     font-size: 13px;
