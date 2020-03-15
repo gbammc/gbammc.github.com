@@ -66,12 +66,7 @@ body {
 h1 {
     font-size: 30px;
     letter-spacing: -1px;
-    color: #222;
     font-weight: bold;
-}
-
-h2 {
-    color: #bbb;
 }
 
 .profile #wrapper {
@@ -258,7 +253,6 @@ em, i { font-style: italic; }
 
 .post h1 {
     margin-bottom: 20px;
-    color: #222;
     font-size: 2rem;
     font-weight: normal;
 }
@@ -266,7 +260,6 @@ em, i { font-style: italic; }
 .post h2 {
     margin-bottom: 20px;
     font-size: 1.6em;
-    color: #111;
     font-weight: 600;
 }
 
@@ -290,7 +283,7 @@ em, i { font-style: italic; }
     margin-top: 10px;
 }
 
-h3, h4, h5 { color:#333; }
+h1, h2, h3, h4, h5 { color:#333; }
 
 h3 { font-size:19px; font-weight: 400; }
 h4 { font-size:16px }
@@ -709,3 +702,62 @@ h2.month {
 img[alt=oc_weak] { width: 420px; }
 img[alt=coroutine_context] { width: 270px; }
 img[alt=coroutine_getcontext] { width: 180px; }
+
+/* Dark Mode */
+:root {
+    --dark-bg-color: #1b1f23;
+    --dark-line-color: #333;
+    --dark-text-color: #c8e1ff;
+}
+
+@media (prefers-color-scheme: dark) {
+    body {
+        color: var(--dark-text-color);
+        background-color: var(--dark-bg-color);
+    }
+
+    .profile #header {
+        border-bottom: 1px solid var(--dark-line-color);
+    }
+
+    #post-list li+li {
+        border-top: 1px solid var(--dark-line-color);
+    }
+
+    #footer {
+        box-shadow: inset 0 1px 0 var(--dark-line-color);
+    }
+
+    #post-nav {
+        border-top: 1px solid var(--dark-line-color);
+    }
+
+    hr {
+        background: var(--dark-line-color);
+    }
+
+    b, strong {
+        color: #88BEFF;
+    }
+
+    #post-list a {
+        color: #ccc;
+    }
+
+    nav.main-nav {
+        background-color: var(--dark-bg-color);
+    }
+
+    .profile h1 {
+        color: var(--dark-text-color);
+    }
+
+    h1, h2, h3, h4, h5 {
+        color: var(--dark-text-color);
+    }
+
+    code.highlighter-rouge {
+        background-color: #00003d;
+        border: 1px solid #032f62;
+    }
+}
