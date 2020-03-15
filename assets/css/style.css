@@ -143,7 +143,7 @@ nav.main-nav a.cta {
 }
 
 #wrapper {
-  max-width: 750px;
+  max-width: 800px;
   margin: 0 auto;
   padding: 60px 40px 0px 40px;
 }
@@ -191,7 +191,6 @@ li  { list-style-position:inside; }
 
 ol {
     list-style-type: none;
-    list-style-type: decimal !ie; /*IE 7- hack*/
 
     margin: 0 0 25px 2em;
     padding: 0;
@@ -497,10 +496,10 @@ Post List
 }
 
 code.highlighter-rouge {
-    background-color: #e8f2fb;
-    border: 1px solid #c9e1f6;
+    background-color: #F7FAFB;
+    border: #E3EDF3 1px solid;
     padding: .1em .2em;
-    border-radius: 3px;
+    border-radius: 2px;
     font-size: .9em;
     font-family: Consolas, Menlo, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace, serif;
     vertical-align: baseline;
