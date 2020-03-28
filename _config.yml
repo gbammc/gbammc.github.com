@@ -17,7 +17,7 @@ disqus_shortname: 'alvinzhusblog'
 plugins: [jekyll-paginate]
 
 # Details for the RSS feed generator
-url:            'http://localhost:4000'
+url:            'http://alvinzhu.me'
 author:         'Alvin Zhu'
 authorTwitter:  'alvin_zhu'
 authorWeibo:    '877731681'

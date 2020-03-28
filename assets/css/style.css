@@ -707,7 +707,7 @@ img[alt=coroutine_getcontext] { width: 180px; }
 :root {
     --dark-bg-color: #1b1f23;
     --dark-line-color: #333;
-    --dark-text-color: #c8e1ff;
+    --dark-text-color: #9caec7;
 }
 
 @media (prefers-color-scheme: dark) {
