@@ -115,7 +115,7 @@ NFA 转 DFA 的方法可以使用**子集构造法**，算法的关键在于找�
 
 需要补充的是，转为 DFA 这一步其实不是必须的，因为构造出的 DFA 状态数量可能很大，占用更多的空间，并且生成 DFA 本身也需要消耗计算资源，有些工具就是基于 NFA 而不是 DFA，例如：emacs，grep，vi，所以还要根据实际需求选择采用 NFA 还是 DFA。
 
-最后，一个简单的 Swift 正则表达式引擎实现可以看[这里](https://github.com/gbammc/SwiftRegex)。
+最后，一个简单的用 Swift 实现的 NFA 正则表达式引擎可以看[这里](https://github.com/gbammc/SwiftRegex)。
 
 ## Reference
 
