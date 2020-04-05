@@ -88,7 +88,11 @@ NFA 转 DFA 的方法可以使用**子集构造法**，算法的关键在于找�
 
 2. **计算 s0 集合中的所有状态在输入一个字符时得到的下一个状态集合**。move(s0, a) 即从集合 s0 接收字符 a 后得到的新状态集合：s1 = ε-closure(move(s0, a)) = {2, 3, 5}
 
+![move](https://i.loli.net/2020/04/05/1AtTuPOVFUDCcio.png){:width="60%"}
+
 3. **分别计算上一步状态集合的 ɛ 闭包**（虽然这个例子上一步只产生 s1 一个结果，不过其他情况也同理）。这里对下一个字符分成 ```b``` 和 ```!b``` 两类：s2 = ε-closure(move(s1, b)) = {4, 6}，s3 = s-closure(move(s1, !b)) = {3}
+
+![closure](https://i.loli.net/2020/04/05/hGtcPTd5aENUjrV.png){:width="60%"}
 
 4. **对 s2 和 s3 重复上述操作，直到没有新的集合产生**。
 
@@ -110,6 +114,8 @@ NFA 转 DFA 的方法可以使用**子集构造法**，算法的关键在于找�
 
 
 需要补充的是，转为 DFA 这一步其实不是必须的，因为构造出的 DFA 状态数量可能很大，占用更多的空间，并且生成 DFA 本身也需要消耗计算资源，有些工具就是基于 NFA 而不是 DFA，例如：emacs，grep，vi，所以还要根据实际需求选择采用 NFA 还是 DFA。
+
+最后，一个简单的 Swift 正则表达式引擎实现可以看[这里](https://github.com/gbammc/SwiftRegex)。
 
 ## Reference
 
