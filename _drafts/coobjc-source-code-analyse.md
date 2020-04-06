@@ -5,7 +5,7 @@ keywords: ios,coobjc,promise,channel,context,coroutine
 description: 通过 coobjc 理解协程
 ---
 
-[coobjc](https://github.com/alibaba/coobjc) 是阿里推出的 repo ，目的是为 iOS 开发带来协程功能。本文尝试分析其实现原理及梳理相关知识点。
+[coobjc](https://github.com/alibaba/coobjc) 是阿里新推出的 repo ，目的是为 iOS 开发带来协程功能。本文尝试分析其实现原理及梳理相关知识点。
 
 ## 协程
 
@@ -52,6 +52,7 @@ struct coroutine {
 coobjc 的核心就在于以 ```coroutine_context``` 命名的这三个文件上。
 
 ![coroutine_context](https://i.loli.net/2019/06/22/5d0e3bce6a51193780.png)
+
 
 因为 coobjc 的原理是模仿 ```ucontext.h``` 来实现上下文切换，所以 ```getcontext``` 和 ```setcontext``` 这两个重要的方法都在 arm64/armv7/x86_64/i386 这些架构上用汇编实现了一遍，统一暴露出来的接口是：
 
