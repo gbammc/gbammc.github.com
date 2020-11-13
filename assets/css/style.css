@@ -468,9 +468,7 @@ Post List
 }
 
 #footer {
-    box-shadow: inset 0 1px 0 #eee;
-    padding: 50px 0 50px 0;
-    margin-top: 100px;
+    padding-bottom: 50px;
 }
 
 /* Post Page */
@@ -491,8 +489,9 @@ Post List
 code.highlighter-rouge {
     background-color: #F7FAFB;
     border: #E3EDF3 1px solid;
-    padding: .1em .2em;
-    border-radius: 2px;
+    padding: 3px 5px;
+    margin: 0 0.15rem;
+    border-radius: 4px;
     font-size: .9em;
     font-family: Consolas, Menlo, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace, serif;
     vertical-align: baseline;
@@ -507,7 +506,7 @@ code.highlighter-rouge {
     padding-top: 40px;
     margin-bottom: 40px;
     padding-bottom: 40px;
-    margin-top: 40px;
+    margin-top: 100px;
     color:#444;
     border-bottom: 1px solid #eee;
 }
@@ -516,11 +515,6 @@ code.highlighter-rouge {
     color: #aaa;
     font-weight: 500;
     display: block;
-}
-
-#post-meta div span.dark {
-    color: #1E2025;
-
 }
 
 #post-meta div {
@@ -682,7 +676,6 @@ h2.month {
     #wrapper { padding:20px 20px 20px 20px;}
     #header { margin-bottom: 60px; border-bottom: 1px solid #eee; }
     .post { margin: 40px 0; }
-    #footer { margin-top: 60px; }
 
     #post-list, #archive-list { margin-top: 0; }
     #post-meta { margin-top: 60px; }
@@ -724,10 +717,6 @@ img[alt=coroutine_getcontext] { width: 180px; }
         border-top: 1px solid var(--dark-line-color);
     }
 
-    #footer {
-        box-shadow: inset 0 1px 0 var(--dark-line-color);
-    }
-
     #post-nav {
         border-top: 1px solid var(--dark-line-color);
     }
@@ -757,7 +746,11 @@ img[alt=coroutine_getcontext] { width: 180px; }
     }
 
     code.highlighter-rouge {
-        background-color: #00003d;
-        border: 1px solid #032f62;
+        color: var(--dark-text-color);
+        padding: 3px 5px;
+        margin: 0 0.15rem;
+        border-radius: 4px;
+        border: 1px solid #272822;
+        background-color: #272822;
     }
 }
