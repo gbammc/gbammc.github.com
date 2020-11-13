@@ -45,11 +45,18 @@ Info.plist 跟其它地方的用途一样，记录了这个 .xcframework 的属�
 
 > Note: Input & Output files for build phases were already present in previous versions of Xcode to determine when to run the build phases and optimise the build dependency resolution; what's new in Xcode 10 is the ability to put the list of those input/output files in xcfilelist — that can then be generated/updated by external tools without having to modify the xcodeproj for that
 
-如果输入输出文件列表里的文件都已经存在，那么 Xcode 就会跳过对应步骤的重建。换句话说，开发者可以自定义构建步骤，跳过一些不需要重复执行的操作，减少编译时间。本文 Demo 里的输入输出文件列表内容如下：
+如果输入输出文件列表里的文件都已经存在，那么 Xcode 就会跳过对应步骤的重建。换句话说，开发者可以自定义构建步骤，跳过一些不需要重复执行的操作，减少编译时间。本文 Demo 里的输入输出文件列表内容如下。
 
-![input files list](https://i.loli.net/2020/11/13/iCNkupOsta28M3y.png)
+Pods-XCFrameworkDemoTests-artifacts-Debug-input-files.xcfilelist：
+```
+${PODS_ROOT}/Target Support Files/Pods-XCFrameworkDemoTests/Pods-XCFrameworkDemoTests-artifacts.sh
+${PODS_ROOT}/BugfenderSDK/BugfenderSDK.xcframework
+```
 
-![output files list](https://i.loli.net/2020/11/13/1gOjaEDsrblHL6p.png)
+Pods-XCFrameworkDemoTests-artifacts-Debug-output-files.xcfilelist：
+```
+${BUILT_PRODUCTS_DIR}/cocoapods-artifacts-${CONFIGURATION}.txt
+```
 
 而脚本所做的事可以概括为以下两点：
 
