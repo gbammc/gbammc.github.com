@@ -21,7 +21,7 @@ Multiple commands produce '/Users/Alvin/Library/Developer/Xcode/DerivedData/XCFr
 
 ## **XCFramework**
 
-XCFramework 是苹果在 WWDC2019 新推出的代码框架格式，主要是为了解决代码库在不同平台、不同架构的分发问题。现在苹果生态下大致可分为 4 个不同的 OS（iOS，macOS，watchOS，tvOS），各个 OS 又支持不同的架构：
+XCFramework 是苹果在 WWDC2019 新推出的代码框架格式，主要是为了解决代码库在不同平台、不同架构的分发问题。现在苹果生态下大致可分为 4 个不同的 OS（iOS，macOS，watchOS，tvOS），各个 OS 又支持不同的[架构](https://docs.elementscompiler.com/Platforms/Cocoa/CpuArchitectures/)：
 
 ![各个 OS 支持的架构](https://i.loli.net/2020/11/10/Xya4pmxg7efG3bl.png)
 
